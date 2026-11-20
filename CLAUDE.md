@@ -30,4 +30,4 @@
 - Claude Code works on GitHub as its own GitHub account when the project has one (apb-setup step 5), and as the human otherwise. Its token lives only in `.claude/settings.local.json`, never in a committed file. The orchestrator, builders and reviewers share that one account, so end every PR description and comment Claude writes with its role, for example `— Claude (orchestrator)`.
 - Problems with the apb process itself go on hornof/apb as one issue per problem, labeled `from-` followed by this repo's name.
 ## Project rules
-(none yet; add one line per rule when something goes wrong)
+- Before re-asking a decision or saying it's still open, read its thread on GitHub in the same turn. A watcher alert about one thing (a merge) says nothing about another (a reply on the card). (2026-11-20: asked for branch protection again after the human had already answered on #1.)
