@@ -54,6 +54,7 @@ Claude can read and write a folder only after the developer gives it access. Kin
 | Piece | What it is | When it's used |
 |---|---|---|
 | `~/src/claude/tahoe-tracker` | Local copy of the repo | Every stage |
+| `.claude/settings.local.json` in the local copy (git-ignored) | The token of Claude's GitHub account, and the git author that makes commits show the account. | Every stage |
 
 ## Outside services
 Services outside GitHub and Claude that the project depends on. Which ones depends on what kind of software it is:
@@ -75,3 +76,4 @@ Services many kinds of project use: payments (Stripe), email sending, error trac
 
 | Piece | What it is | When it's used |
 |---|---|---|
+| Claude's GitHub account: https://github.com/hornof-claude | The account Claude Code acts as on GitHub, a collaborator on the repo and the board (apb-setup step 5). Its token's expiry: never. | Every stage |
