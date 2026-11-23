@@ -99,7 +99,7 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 | Laptop or phone? | Laptop first; iPhone is a nice-to-have (requirements 7, 8). |
 | Which resorts first? | Northstar, Heavenly, Kirkwood; Hope Valley later (section 9). |
 | Where does it live? | tahoe-tracker.hornof.org on Cloudflare (section 8). |
-| How are the cams shown? | Stills that reload every 2 minutes; click for live; straight from Brownrice, no server (requirement 2). [Spike](spikes/webcams.md). |
+| How are the cams shown? | Proposed, for Luke to decide at gate 1 (review Decision 16): stills that reload every 2 minutes; click for live; straight from Brownrice, no server (requirement 2). [Spike](spikes/webcams.md). |
 | Where do the snow numbers come from? | The resorts' own pages, read by a scheduled GitHub Action into `data.json` (section 7). [Spike](spikes/snow-report-data.md). |
 
 ## 13. Open questions
