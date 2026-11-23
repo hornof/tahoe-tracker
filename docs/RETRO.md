@@ -86,3 +86,19 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 ### Noted for later (Luke)
 - **The progress page needs a lot of work.** Luke understands every piece on it, but the layout is hard to read and he can't get useful information from it. It comes from apb's `scripts/progress-page.py`, so the redesign belongs to apb.
 - **What it used to look like, and should again (Luke).** The sketch-gallery map had a "Now:" line and one box per stage, each marked Done or Now, with the current stage filled in. apb commit af1c43b ("Map: no copied status", 2026-11-15) removed both, and the progress page copied the plain list. The "3 of 3 board items in Done" bar is misleading too: it counts only the cards on the board, so it reads 100% after planning.
+
+## Build, 2026-11-23
+
+### What worked (Claude)
+- **Riskiest thing first.** Card #13 answered the big unknown, whether Vail lets Cloudflare's servers fetch its pages, in about 5 minutes. It did.
+- **Parallel builders.** Cards #14 (snow data) and #15 (cams page) were built at the same time, each in its own worktree. Each card took 5–12 minutes to build.
+- **Early looks.** Luke saw the cams page and the numbers on previews before review, and liked them.
+- **Questions one at a time.** Four decisions (stale rule, retry timing, big-cam height, click behaviour) came to Luke as short (a)/(b) choices; each took a minute.
+- **The reviewer caught real things:** a load error that covered the whole page, missing dates on fetch times, wrong test counts. Its spot checks matched every number against the resorts' own pages.
+- **Tests that bite.** Deliberate-bug checks on cards #14, #15 and #16 caught every planted bug except one, which then got its own test.
+
+### What didn't work (Claude)
+- **A merge conflict nobody saw.** Cards #14 and #15 both added a line to `LOG.md`. After #14 merged, #15's PR quietly stopped running its tests, because GitHub doesn't run them on a conflicting PR. It was caught only because the checks never appeared.
+- **Interruptions.** One builder stopped on a temporary API error, and a safety check failed transiently twice. Both were resumed, but each cost a few minutes.
+- **Builders departing from their rules.** One wrote a helper before its tests; one ran an extra check unasked. Both were put right, but each needed a round.
+- **Hook busywork.** Assignees, card moves and "no action" replies on every reviewer note, before every hand-off.
