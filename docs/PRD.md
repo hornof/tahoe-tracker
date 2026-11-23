@@ -36,7 +36,7 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 ### Visitors
 1. **One page, three resorts:** Northstar, Heavenly and Kirkwood each get a column (laptop) with their name, cams and snow numbers. *Check: at 1440 × 900, all three resort names, at least one cam each, and their snow numbers are visible without scrolling sideways.*
 2. **Cams:** each resort shows its cams. A cam is live video where the resort allows its player on other sites, otherwise its latest still image. *Check: each cam is labeled with its name and either plays (labeled "live") or shows an image with its time; while the source works, that image is under 15 minutes old.*
-3. **Snow numbers:** for each resort, new snow (24 h and the longest period the source gives up to 72 h), base depth, lifts open out of total, and current temperature, where the source has them. *Check: the numbers on the page match the resort's own snow report at the time of the last fetch, compared for all three resorts on one day.*
+3. **Snow numbers:** for each resort, new snow overnight, in 24 h, 48 h and 7 days; base depth; lifts open out of total; and current temperature. These are what the resorts publish ([spike](spikes/snow-report-data.md)); there is no 72 h figure (open question 4). *Check: the numbers on the page match the resort's own snow report at the time of the last fetch, compared for all three resorts on one day.*
 4. **Update times:** every cam image and every resort's numbers show when they were last updated, in Pacific time. *Check: each has a visible time; stopping the data fetch for longer than the limit makes it show as stale.*
 5. **Stale and broken sources:** snow numbers older than 6 hours, or a cam image older than 30 minutes, are greyed out and labeled stale. A source that fails shows "not available" with a link to the resort's page. *Check: with one resort's source made to fail in a test, that resort shows "not available" and the other two are unaffected.*
 6. **Links out:** each resort links to its own cams page and snow-report page. *Check: every link opens the right resort page, checked by hand on all six.*
@@ -62,7 +62,7 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 
 ## 7. Content
 - **Cams:** the resorts' own cams; which ones and how they're shown depends on the [webcams spike](spikes/webcams.md).
-- **Snow numbers:** from the source the [snow-report data spike](spikes/snow-report-data.md) recommends, fetched by something outside the page (a scheduled GitHub Action or a Cloudflare Worker), because a browser page can't read another site's content.
+- **Snow numbers:** from the resorts' own snow-report and lift-status pages, which carry the numbers as data in the page, laid out the same way on all three sites. A scheduled GitHub Action fetches the six pages, reads them with one parser, and writes a `data.json` file the page shows. A browser page can't read another site's content, so this runs outside the page. Details: [snow-report data spike](spikes/snow-report-data.md).
 - Nothing is stored about visitors.
 
 ## 8. Hosting and sharing
@@ -81,13 +81,14 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 
 ## 10. Risks and assumptions
 - **Resorts change their sites.** Any scraper breaks when Vail changes its pages, likely a few times a season. Mitigated by requirement 5 (broken shows as broken) and 11 (the owner can see it).
-- **Resorts may forbid reuse** of cams or data in their terms. The spikes check; for a personal page with a few friends the risk is low, but the page links back to each resort.
+- **Resorts' terms.** Vail's robots.txt allows the report pages and its terms say nothing about automated access, but they license content for personal, noncommercial use and forbid posting it on another website. A public page goes beyond that on paper (open question 5).
+- **Bot protection.** Vail's sites block requests that pretend to be a browser but answer an honest user agent, and block with a page that still returns status 200. The parser checks for the data, not the status. Fetching from GitHub's servers rather than a home connection is untested; the first build card tries it.
 - **Assumed:** all three resorts share one site design (all Vail Resorts), so one way of reading them covers all three. The snow-report spike confirms or refutes it.
 - **Assumed:** hornof.org's DNS is on Cloudflare, so the subdomain is one DNS record.
 
 ## 11. Technical uncertainties
 1. **Can the resorts' cams be shown live on another site, and if not, as stills no older than a few minutes?** Spike: [webcams](spikes/webcams.md). Answer: *pending*.
-2. **Where can each resort's snow numbers come from reliably, without bot protection blocking a server-side fetch?** Spike: [snow-report data](spikes/snow-report-data.md). Answer: *pending*.
+2. **Where can each resort's snow numbers come from reliably, without bot protection blocking a server-side fetch?** Spike: [snow-report data](spikes/snow-report-data.md). Answer: from the resorts' own pages, which answer an honest user agent; one parser covers all three; no free third-party API covers them.
 3. **Can the Hope Valley YouTube cam be embedded?** Covered by the webcams spike. Answer: *pending*.
 
 ## 12. Decisions so far
@@ -97,8 +98,11 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 | Laptop or phone? | Laptop first; iPhone is a nice-to-have (requirements 7, 8). |
 | Which resorts first? | Northstar, Heavenly, Kirkwood; Hope Valley later (section 9). |
 | Where does it live? | tahoe-tracker.hornof.org on Cloudflare (section 8). |
+| Where do the snow numbers come from? | The resorts' own pages, read by a scheduled GitHub Action into `data.json` (section 7). [Spike](spikes/snow-report-data.md). |
 
 ## 13. Open questions
 1. **Which cams per resort?** Each resort lists several. Recommended: show every cam the resort lists, in the resort's own order, and drop any that is broken more than it works.
 2. **How often should snow numbers refresh?** Recommended: every 30 minutes from 5 am to 6 pm Pacific, and every 2 hours overnight. Resorts post their morning report around 5–6 am.
 3. **Temperature units and snow units?** Recommended: °F and inches, as the resorts report them.
+4. **No 72 h snow figure: what instead?** The resorts publish overnight, 24 h, 48 h and 7 days. Options: (a) show those four; (b) build a 72 h total from stored daily 24 h values; (c) use the change in a nearby station's snow depth, labeled as a station reading. Recommended: (a).
+5. **Public page, or personal?** Vail's terms license its content for personal use and forbid posting it on another website. Options: (a) public, as the PRD input says; (b) a personal page, marked so search engines skip it, that shows only the numbers and cams and links to each resort, with no Vail text or logos. Recommended: (b). Friends can still open the link.
