@@ -66,7 +66,7 @@ Hope Valley cam and weather, lift status, current temperature, road conditions. 
 | Hope Valley? | Later (Luke, PRD input and review). |
 | Terms of use? | Personal use; no special handling (Luke, review). |
 | Cams: stills or all live? | All live (Luke, 2026-11-22, review Decision 16). |
-| When is data "stale"? | When our fetch is over 6 hours old (review Decision 17, default a). |
+| When is data "stale"? | Only when our fetch has failed for over 6 hours (Luke, 2026-11-22, review Decision 17). |
 
 ## 13. Open questions
 None.
