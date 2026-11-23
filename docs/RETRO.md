@@ -57,3 +57,13 @@ Kept as we go, for a retrospective at the end of the project. Each stage gets wh
 - **Hook busywork again.** End-of-turn checks forced a board move, PR and card assignees, a status line on each review fix, and a "no action" reply for each reviewer note before the merge could be asked for. Each one cost a round and meant nothing to Luke.
 - **Small calls made without Luke.** To satisfy that last check, Claude closed reviewer notes 7, 10 and 11 as "no action" on its own judgment. They were minor, but Luke wasn't asked.
 - **Watcher noise.** Most of its alerts were about Claude's own comments.
+
+### Luke's take
+- **Overall:** the TDD phase went great. Fast, only a couple of simple questions, and done. A much more pleasant experience than the PRD phase.
+- **The re-asked Worker question:** fine, not a big deal.
+- **The approved PRD still saying "GitHub Action":** he didn't catch it; he thought they'd agreed on the Cloudflare Worker.
+- **Hook busywork and watcher noise:** he didn't notice either. It cost Claude rounds, not Luke's attention.
+- **Minor reviewer notes closed without him:** good. If Claude can handle something on its own, all the better; the reviewer finding minor things is a good sign.
+
+### Takeaway
+What made this stage pleasant: one short doc, a few simple questions one at a time, and Claude handling the small stuff itself. Ask Luke only what needs him.
