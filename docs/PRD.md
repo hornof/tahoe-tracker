@@ -24,7 +24,7 @@ Luke, on a laptop. Friends he sends the link to.
 Nothing here is a hard must-have (PRD input); this is the first build.
 1. **Snow numbers:** for each resort, what its own snow report shows: 24 h, 48 h and 7-day snowfall, base depth, season total, and the report's update time. *Check: the numbers match each resort's snow report at the time of the last fetch, compared for all three on one day.*
 2. **Forecast:** for each resort, the next 5 days' high, low and expected snowfall, from the same resort page. *Check: matches the forecast on each resort's snow-report page.*
-3. **Cams:** all ten (Northstar 4, Heavenly 4, Kirkwood 2) as stills that reload every 2 minutes; click one to play it live. *Check: each still shows its name and fetch time and reloads after 2 minutes; clicking plays that cam.*
+3. **Cams:** all ten (Northstar 4, Heavenly 4, Kirkwood 2) play live on the page. If a cam is down, its spot shows a placeholder. *Check: each cam plays live and shows its name; a cam made to fail shows the placeholder.*
 4. **Fetch:** a GitHub Action reads the resort pages once an hour and writes the numbers the page shows. *Check: the update time on the page is never more than about an hour behind the resort's report.*
 5. **Broken shows as broken:** if a fetch fails or a cam image won't load, that resort or cam says "not available" and links to the resort's page; numbers our fetch hasn't refreshed in 6 hours say "stale". *Check: with one resort's fetch made to fail in a test, it shows "not available" and the other two are unaffected.*
 6. **Laptop first; iPhone nice-to-have.** *Check: works at 1280 and 1920 px wide. At 390 px the resorts stack in one column if that's easy; not a blocker.*
@@ -65,7 +65,7 @@ Hope Valley cam and weather, lift status, current temperature, road conditions. 
 | How often to fetch? | Once an hour (Luke, review). |
 | Hope Valley? | Later (Luke, PRD input and review). |
 | Terms of use? | Personal use; no special handling (Luke, review). |
-| Cams: stills or all live? | Stills, click for live (review Decision 16, default a). |
+| Cams: stills or all live? | All live (Luke, 2026-11-22, review Decision 16). |
 | When is data "stale"? | When our fetch is over 6 hours old (review Decision 17, default a). |
 
 ## 13. Open questions
