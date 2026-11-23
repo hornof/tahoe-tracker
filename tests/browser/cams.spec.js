@@ -97,6 +97,44 @@ test('the button next to a tile makes it the big one, and every cam can be made 
   }
 });
 
+test('after "Make big" the new big cam is in view and has keyboard focus', async ({ page }) => {
+  for (const r of RESORTS) {
+    await page.goto(`/#${r.id}`);
+    for (const c of r.cams.slice(1)) {
+      const button = page.getByRole('button', { name: `Make ${c.name} the big cam` });
+      await button.scrollIntoViewIfNeeded();
+      await button.click();
+      await expect(page.locator('.big')).toContainText(c.name);
+      await expect(page.locator('.big .big-name')).toBeFocused();
+      const top = await page.locator('.big').evaluate((e) => e.getBoundingClientRect().top);
+      expect(top).toBeGreaterThanOrEqual(0);
+      expect(top).toBeLessThan(page.viewportSize().height / 2);
+    }
+  }
+});
+
+test('if the cam list fails to load, a message says so and the header and tabs stay visible', async ({ page }) => {
+  await page.route('**/cams.json', (route) => route.fulfill({ status: 500, body: 'oops' }));
+  await page.goto('/');
+  await expect(page.getByRole('alert')).toContainText("cam list didn't load");
+  const nav = page.getByRole('navigation', { name: 'Resorts' });
+  for (const name of ['All resorts', ...RESORTS.map((r) => r.name)]) {
+    const tab = nav.getByRole('link', { name, exact: true });
+    await expect(tab).toBeVisible();
+    // Nothing covers the tab: the element at its centre is the tab itself.
+    const onTop = await tab.evaluate((t) => {
+      const b = t.getBoundingClientRect();
+      return t.contains(document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2));
+    });
+    expect(onTop, `${name} tab is not covered`).toBe(true);
+  }
+  const h1 = page.getByRole('heading', { level: 1, name: 'Tahoe Tracker' });
+  expect(await h1.evaluate((h) => {
+    const b = h.getBoundingClientRect();
+    return h.contains(document.elementFromPoint(b.left + 5, b.top + b.height / 2));
+  })).toBe(true);
+});
+
 test('tabs switch resorts and go home, and mark the current one', async ({ page }) => {
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'Resorts' });
@@ -187,10 +225,16 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       const frames = await boxes(page.locator('iframe'));
       expectNoOverlap(frames);
       for (const f of frames) expect(f.width).toBeGreaterThan(narrow ? 120 : 200);
+      const [cams] = await boxes(page.locator('.cams'));
+      const [info] = await boxes(page.locator('.resort-info'));
       if (narrow) {
         // Stacked: the big cam spans the column, and the numbers panel sits below the cams.
         const [big] = await boxes(page.locator('.big'));
         expect(big.width).toBeGreaterThan(page.viewportSize().width - 40);
+        expect(info.y).toBeGreaterThanOrEqual(cams.y + cams.height);
+      } else {
+        // Side by side on a laptop: the numbers panel is to the right of the cams.
+        expect(info.x).toBeGreaterThanOrEqual(cams.x + cams.width);
       }
     }
   });

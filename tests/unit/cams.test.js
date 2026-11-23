@@ -71,3 +71,11 @@ test('parseHash falls back sensibly on junk', () => {
   assert.deepEqual(parseHash('#heavenly/northstarvillage', cams), { view: 'heavenly', big: 'heavenlydipper' });
   assert.deepEqual(parseHash('#kirkwood/nope', cams), { view: 'kirkwood', big: 'kirkwoodcornice' });
 });
+
+test('the tabs written in index.html (shown before and without cams.json) match the resorts in cams.json', async () => {
+  const html = await read('../../site/index.html');
+  const nav = html.match(/<nav id="tabs"[^>]*>([\s\S]*?)<\/nav>/)[1];
+  const tabs = [...nav.matchAll(/<a class="tab" href="([^"]*)"[^>]*>([^<]+)<\/a>/g)].map((m) => [m[1], m[2]]);
+  const expected = [['#', 'All resorts'], ...resorts(cams).map((r) => [hashFor({ view: r.id }), r.name])];
+  assert.deepEqual(tabs, expected);
+});

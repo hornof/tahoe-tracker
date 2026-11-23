@@ -8,6 +8,7 @@ const nav = document.getElementById('tabs');
 
 // A cam is "down" when its still fails to load (TDD, The cams). Checked once per page load.
 const status = new Map(); // id -> 'checking' | 'up' | 'down'
+let showBig = false; // set by "Make big", used by the next render
 
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
@@ -90,7 +91,7 @@ function resortView(r, bigId) {
     el('div', { class: 'cams' },
       el('figure', { class: 'big' },
         spot(big, r),
-        el('figcaption', {}, el('span', { class: 'cam-name big-name', text: `${r.name} · ${big.name}` }))),
+        el('figcaption', {}, el('span', { class: 'cam-name big-name', tabindex: '-1', text: `${r.name} · ${big.name}` }))),
       el('div', { class: 'tiles', 'data-count': String(rest.length) }, rest.map((c) =>
         el('figure', { class: 'tile' },
           spot(c, r),
@@ -100,7 +101,7 @@ function resortView(r, bigId) {
               type: 'button',
               class: 'pill',
               'aria-label': `Make ${c.name} the big cam`,
-              onclick: () => { location.hash = hashFor({ view: r.id, big: c.id }); },
+              onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
             }, 'Make big')))))),
     el('aside', { class: 'resort-info card' },
       el('h2', { text: r.name }),
@@ -124,6 +125,13 @@ function render(list) {
   tabs(rs, state.view);
   if (state.view === 'home') main.replaceChildren(...home(rs));
   else main.replaceChildren(resortView(rs.find((r) => r.id === state.view), state.big));
+  // After "Make big": bring the new big cam into view and put keyboard focus on its name.
+  if (showBig && state.view !== 'home') {
+    const big = main.querySelector('.big');
+    big.scrollIntoView({ block: 'start' });
+    big.querySelector('.big-name').focus({ preventScroll: true });
+  }
+  showBig = false;
 }
 
 async function start() {
@@ -134,7 +142,7 @@ async function start() {
     window.addEventListener('hashchange', () => render(list));
     render(list);
   } catch (err) {
-    main.replaceChildren(el('p', { class: 'down', text: `The cam list didn't load (${err.message}). Try reloading.` }));
+    main.replaceChildren(el('p', { class: 'load-error', role: 'alert', text: `The cam list didn't load (${err.message}). Try reloading.` }));
   }
 }
 
