@@ -85,3 +85,4 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 
 ### Noted for later (Luke)
 - **The progress page needs a lot of work.** Luke understands every piece on it, but the layout is hard to read and he can't get useful information from it. It comes from apb's `scripts/progress-page.py`, so the redesign belongs to apb.
+- **What it used to look like, and should again (Luke).** The sketch-gallery map had a "Now:" line and one box per stage, each marked Done or Now, with the current stage filled in. apb commit af1c43b ("Map: no copied status", 2026-11-15) removed both, and the progress page copied the plain list. The "3 of 3 board items in Done" bar is misleading too: it counts only the cards on the board, so it reads 100% after planning.
