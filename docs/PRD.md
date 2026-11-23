@@ -49,7 +49,12 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 11. **Breakage is visible:** when a resort changes its site and the data fetch fails, the owner can see it. *Check: a failed fetch shows on the page (requirement 5) and as a failed run on GitHub.*
 
 ## 6. Design and UX
-**Mockups:** to come on a Claude Design canvas, linked here before review. Starting point: layout D in the earlier [mockups artifact](https://claude.ai/artifact/2NoKu58r1PgSDXcE73GFxw) (private to the owner): a row of snow numbers for all three resorts on top, then one column per resort with its cams.
+**Mockups:** [Claude Design canvas](https://claude.ai/artifact/48pVZCLC6X9PQEdoVRSQza) (private to the owner until shared), based on layout D in the earlier [mockups artifact](https://claude.ai/artifact/2NoKu58r1PgSDXcE73GFxw). PNGs go in `docs/mockups/` after approval.
+
+| Screen | What it shows |
+|---|---|
+| Laptop, 1440 px | A table of snow numbers for all three resorts on top, then one column per resort with its cams. Kirkwood shows the stale state; one Heavenly cam shows a failed source. |
+| iPhone, 390 px (nice-to-have) | The three resorts stacked: four numbers in a row, then the cams. |
 **Look:** plain and dense, like a dashboard: numbers large, labels small, update times muted. Light and dark mode follow the computer's setting.
 **Motion:** none beyond what a cam player does itself. Images refresh in place without the page jumping.
 **Accessibility:** every cam has a text label; colors pass WCAG AA contrast; stale is shown by a word, not only by grey.
