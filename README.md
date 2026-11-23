@@ -6,7 +6,9 @@ Built with the apb process: https://github.com/hornof/apb
 
 ## Using it
 
-Added once there's something to use.
+Open https://tahoe-tracker.hornof.org (live once Cloudflare Pages is connected).
+
+To run it locally: `python3 -m http.server 8788 --directory site`, then open http://127.0.0.1:8788. Tests: `npm ci`, then `npm test` (unit) and `npx playwright test` (browser).
 
 ## Files
 
