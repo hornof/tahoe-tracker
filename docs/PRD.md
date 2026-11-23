@@ -69,7 +69,7 @@ Hope Valley cam and weather, lift status, current temperature, road conditions. 
 | Terms of use? | Personal use; no special handling (Luke, review). |
 | Cams: stills or all live? | All live (Luke, 2026-11-22, review Decision 16). |
 | Page layout? | The clickable mockup: one live cam per resort, click to see all of that resort's cams, tabs to switch or go home. Details to refine (Luke, 2026-11-22). |
-| When is data "stale"? | Only when our fetch has failed for over 6 hours (Luke, 2026-11-22, review Decision 17). |
+| When is data "stale"? | When our last fetch failed and the saved copy is over 6 hours old (Luke, 2026-11-22, review Decision 17; reworded to match what's built, Luke, 2026-11-23, PR #18 Decision 3). |
 
 ## 13. Open questions
 None.
