@@ -45,7 +45,15 @@ Kept as we go, for a retrospective at the end of the project. Each stage gets wh
 ## TDD, 2026-11-23
 
 ### What worked (Claude)
-- A one-page TDD, and the reviewer's questions brought to Luke one at a time in chat. Three decisions took a few minutes.
+- **Short.** The TDD fit on one page: stack, a test per PRD requirement, four build pieces.
+- **Questions one at a time, in chat.** The reviewer's questions came to Luke as short (a)/(b) choices with a recommendation. Three decisions (Worker, how clicking a cam works, saved numbers shown instantly) took a few minutes.
+- **The reviewer earned its keep.** It caught a real design bug: a live player takes every click, so "click a cam to open its resort" couldn't work as drawn. Luke's choice (b) fixed it before any code.
+- **Decisions were recorded where they belong:** in the TDD, the PRD's decisions table, and a short note on the PR.
+- **The riskiest unknown goes first.** Build piece 1 checks whether Vail lets Cloudflare fetch its pages before anything else is built.
 
 ### What didn't work (Claude)
-- The Worker-or-Action question was asked again although Luke had already agreed hourly commits were bad; he hadn't said "Worker" outright, so Claude asked rather than assume.
+- **A re-asked question.** Luke had already agreed hourly commits were bad, but hadn't said "Worker" outright, so Claude asked again. He reasonably asked "didn't we already go over this?"
+- **The approved PRD was out of date.** It still said "GitHub Action" after Luke chose the Worker, so it needed edits after approval. Recording a decision should update every doc that mentions it at the same time.
+- **Hook busywork again.** End-of-turn checks forced a board move, PR and card assignees, a status line on each review fix, and a "no action" reply for each reviewer note before the merge could be asked for. Each one cost a round and meant nothing to Luke.
+- **Small calls made without Luke.** To satisfy that last check, Claude closed reviewer notes 7, 10 and 11 as "no action" on its own judgment. They were minor, but Luke wasn't asked.
+- **Watcher noise.** Most of its alerts were about Claude's own comments.
