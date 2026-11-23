@@ -19,3 +19,8 @@ What isn't: routine progress ("wrote tests, they pass"), anything the board or t
 - The first PRD drafts grew far past what Luke asked for (a 72-hour figure he never wanted, lifts, temperature, a terms analysis), and review decisions were written in as defaults he never saw. Luke cut it back to his own list; the lesson is to ask, keep it short, and never let a default stand in for his answer.
 - Luke chose live cams and, from a clickable mockup, the layout: one live cam per resort, click through to all of that resort's cams.
 - Data fetching moved from an hourly GitHub commit to a Cloudflare Worker idea, to be settled in the TDD.
+
+## 2026-11-23: TDD approved (gate 2)
+- A plain static page on Cloudflare Pages, live Brownrice players, and a Cloudflare Worker for the snow numbers, chosen by Luke over an hourly GitHub Action that would have committed every hour.
+- Luke chose clickable players everywhere, with a button next to each cam to navigate, and saved numbers shown instantly with a background refresh.
+- The first build piece checks the biggest risk before anything else: whether Vail lets Cloudflare's servers fetch its pages.

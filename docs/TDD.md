@@ -1,4 +1,4 @@
-# TDD — tahoe-tracker   (status: DRAFT)
+# TDD — tahoe-tracker   (status: APPROVED by Luke, 2026-11-23)
 
 From the approved [PRD](PRD.md). TDD issue: [#7](https://github.com/hornof/tahoe-tracker/issues/7).
 
