@@ -12,7 +12,6 @@ Added once there's something to use.
 
 | File | What it is | Who reads it |
 |---|---|---|
-| docs/collaborator-guide.md | For invited teammates: the steps, in order | teammates |
 | docs/MAP.md | Every piece of the project and where it lives. The map artifact is built from it | anyone |
 | docs/HISTORY.md | The project's turning points for people, oldest first: decisions, surprises, changes of mind. Start here to learn the project's history | anyone |
 | docs/PRD.md | What it does and for whom (written from the PRD input), with any mockups in docs/mockups/ | collaborator, Claude |
