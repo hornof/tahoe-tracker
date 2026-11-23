@@ -235,6 +235,17 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       } else {
         // Side by side on a laptop: the numbers panel is to the right of the cams.
         expect(info.x).toBeGreaterThanOrEqual(cams.x + cams.width);
+        // Luke, Decision 8 (b): the big cam is capped by height, so the whole tile row (tiles, names
+        // and "Make big" buttons) fits in the window without scrolling.
+        expect(await page.evaluate(() => window.scrollY)).toBe(0);
+        const [tiles] = await boxes(page.locator('.tiles'));
+        const h = page.viewportSize().height;
+        expect(tiles.y + tiles.height, 'tile row bottom inside the window').toBeLessThanOrEqual(h);
+        for (const b of await boxes(page.locator('.tile button'))) expect(b.y + b.height).toBeLessThanOrEqual(h);
+        // The big cam keeps its 16:9 shape and is centred over the tiles.
+        const [spot] = await boxes(page.locator('.big .spot'));
+        expect(Math.abs(spot.width / spot.height - 16 / 9)).toBeLessThan(0.02);
+        expect(Math.abs((spot.x + spot.width / 2) - (cams.x + cams.width / 2))).toBeLessThan(2);
       }
     }
   });

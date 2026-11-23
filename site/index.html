@@ -73,6 +73,11 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .cams { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big .spot { border-radius: 10px; }
+/* Laptop: cap the big cam by height so the tile row (names and "Make big" too) fits on screen
+   (Luke, Decision 8 b). 400px is the header, the caption and the tile row; it keeps 16:9 and is centred. */
+@media (min-width: 761px) {
+  .big { width: min(100%, max(360px, calc((100vh - 400px) * 16 / 9))); align-self: center; }
+}
 .big-name { font-size: 20px; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tile .cam-name { font-size: 14px; }
