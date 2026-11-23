@@ -20,6 +20,7 @@ The map lists only things that rarely change. It never copies a status, such as 
 | Coordination: https://github.com/hornof/tahoe-tracker/issues/3 | The standing thread where Luke, the orchestrator and the advisor agree who does what and hand work off. Named on the `coordination:` line in CLAUDE.md, so apb's watcher watches it. | Every stage |
 | Backlog: https://github.com/hornof/tahoe-tracker/issues?q=is:open+label:backlog | Ideas for later that don't belong in the current work: one issue each, labeled `backlog`, not on the board. See apb's `docs/product-guide.md`. | Grooming, and choosing the next piece of work |
 | Backlog ranking: none yet, made at the first grooming | The pinned issue that ranks the backlog, best first, one line per idea: the link, the value, the size. Updated at each grooming. | Grooming, and choosing the next piece of work |
+| CI: `.github/workflows/ci.yml`, runs at https://github.com/hornof/tahoe-tracker/actions | Unit and browser tests on every PR and on every push to main | Every PR from the build on |
 | `docs/MAP.md` | The map, in the repo. The map artifact is built from it. | Any time |
 
 ## Claude artifacts

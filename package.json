@@ -1,0 +1,13 @@
+{
+  "name": "tahoe-tracker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build step: site/ is served as is.'",
+    "test": "node --test --test-timeout=10000 \"tests/unit/**/*.test.js\"",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}
