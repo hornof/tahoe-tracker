@@ -102,3 +102,41 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 - **Interruptions.** One builder stopped on a temporary API error, and a safety check failed transiently twice. Both were resumed, but each cost a few minutes.
 - **Builders departing from their rules.** One wrote a helper before its tests; one ran an extra check unasked. Both were put right, but each needed a round.
 - **Hook busywork.** Assignees, card moves and "no action" replies on every reviewer note, before every hand-off.
+
+## The whole project
+
+### How long it took
+From apb's event log and GitHub, Pacific time:
+- **Wall time:** about 12 hours, 7:44 pm Sunday to 7:49 am Monday (the last merge).
+- **Break:** Luke's last message before it was at 2:41 am; he was back at 7:49 am. Only the watcher ran in between (5 hours).
+- **Hands-on:** about 7 hours.
+
+| Stage | Time, approx. | Notes |
+|---|---|---|
+| Setup (repo, board, accounts) | 15 min | 7:44–7:58 pm |
+| Detour: apb PR #185 and the coordination issue | 1 h | includes a 30-minute pause |
+| PRD | 2 h | most of it the rough patch (extra content, defaulted decisions) |
+| TDD | 40 min | smooth |
+| Setup: CI and Cloudflare | 1¼ h | about 30 minutes of it the fresh-session detour and the progress page |
+| Build, 4 cards | 1¼ h | 1:21–2:39 am; the last merge waited for the morning |
+
+About 2–2½ of the 7 hours went to detours rather than the product. For comparison, sketch-gallery took about 7 days, with many more interruptions. Luke is happy with the turnaround.
+
+### Rabbit holes (Luke)
+When Claude made mistakes or Luke got confused, Luke paused the real work to understand why they'd got out of sync. That turned into yak shaving that fed his frustration. The worst was the fresh-session suggestion, with reasons that argued the opposite: 30–60 minutes that a plain "no" would have saved. An earlier detour filled the chat with the very back-and-forth the fresh session was meant to escape.
+
+He still wants a way to give feedback and fix mistakes, just not mid-work.
+
+**Try next time:** Luke says **"park it"**. Claude adds one line under "Parked" below, answers what's needed in one line, and goes back to the work. Parked items get investigated at the retrospective. "Reread CLAUDE.md" stays as the reset, and "no" to a Claude suggestion is always enough.
+
+### Parked
+- (none yet)
+
+### To do: review apb's hook rules together (Luke)
+The end-of-turn hook rules in apb (`hooks/apb-stop.py`, `scripts/consistency-check.py`) are too specific. Each seems to have been added after one incident, perhaps from a "make sure this never happens again" whose wording Luke never saw. They encode the instance, not the principle (see Luke's guiding principles on the right level of abstraction), so they fire when a rule is broken on paper but not in spirit. Examples from this project:
+- a decision link demanded for an ordinary chat question;
+- deleting the notes that recorded Luke's decisions;
+- a "no action" reply required for every reviewer note;
+- assign and unassign churn.
+
+Luke wants to go over them with Claude, read the actual text, and rewrite them at the right level.
