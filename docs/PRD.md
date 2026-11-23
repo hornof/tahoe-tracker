@@ -1,4 +1,4 @@
-# PRD — tahoe-tracker   (status: DRAFT, revision 2)
+# PRD — tahoe-tracker   (status: APPROVED by Luke, 2026-11-22, revision 2)
 
 Source: PRD input [#1](https://github.com/hornof/tahoe-tracker/issues/1) and Luke's review of this PR (2026-11-22). PRD issue: [#5](https://github.com/hornof/tahoe-tracker/issues/5).
 Supporting files: [spike: webcams](spikes/webcams.md) · [spike: snow-report data](spikes/snow-report-data.md)
@@ -30,7 +30,7 @@ Nothing here is a hard must-have (PRD input); this is the first build.
 6. **Laptop first; iPhone nice-to-have.** *Check: works at 1280 and 1920 px wide. At 390 px the resorts stack in one column if that's easy; not a blocker.*
 
 ## 6. Design and UX
-**Mockups:** [Claude Design canvas](https://claude.ai/artifact/48pVZCLC6X9PQEdoVRSQza) (private to Luke). PNGs go in `docs/mockups/` after approval.
+**Mockups:** [Claude Design canvas](https://claude.ai/artifact/48pVZCLC6X9PQEdoVRSQza) (private to Luke); described in [`mockups/`](mockups/README.md).
 
 | Screen | What it shows |
 |---|---|
