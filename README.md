@@ -14,8 +14,9 @@ To run it locally: `python3 -m http.server 8788 --directory site`, then open htt
 
 | File | What it is | Who reads it |
 |---|---|---|
-| site/ | The web page itself, served as is | anyone |
-| tests/ | Unit tests (`tests/unit/`) and browser tests (`tests/browser/`) | Claude, builders |
+| site/ | The web page itself, served as is: `index.html`, `app.js` (the views), `cams.js` (cam URLs and the address bar) | anyone |
+| site/cams.json | The ten cams: resort, name and Brownrice id. Edit this when a resort adds or renames a cam | anyone |
+| tests/ | Unit tests (`tests/unit/`), browser tests (`tests/browser/`, Brownrice stubbed) and live checks (`tests/live/`, `npm run test:live`, after each deploy) | Claude, builders |
 | .github/workflows/ci.yml | The automatic tests GitHub runs on every PR and on main | Claude |
 | docs/MAP.md | Every piece of the project and where it lives. The map artifact is built from it | anyone |
 | docs/HISTORY.md | The project's turning points for people, oldest first: decisions, surprises, changes of mind. Start here to learn the project's history | anyone |

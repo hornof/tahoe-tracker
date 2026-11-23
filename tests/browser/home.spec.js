@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { stubBrownrice } from './stub.js';
+
+test.beforeEach(async ({ page }) => {
+  await stubBrownrice(page);
+});
 
 test('the page loads with its title', async ({ page }) => {
   await page.goto('/');

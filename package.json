@@ -5,7 +5,8 @@
   "scripts": {
     "build": "echo 'No build step: site/ is served as is.'",
     "test": "node --test --test-timeout=10000 \"tests/unit/**/*.test.js\"",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:live": "node --test --test-timeout=20000 \"tests/live/**/*.test.js\""
   },
   "devDependencies": {
     "@playwright/test": "1.65.1"
