@@ -24,3 +24,8 @@ What isn't: routine progress ("wrote tests, they pass"), anything the board or t
 - A plain static page on Cloudflare Pages, live Brownrice players, and a Cloudflare Worker for the snow numbers, chosen by Luke over an hourly GitHub Action that would have committed every hour.
 - Luke chose clickable players everywhere, with a button next to each cam to navigate, and saved numbers shown instantly with a background refresh.
 - The first build piece checks the biggest risk before anything else: whether Vail lets Cloudflare's servers fetch its pages.
+
+## 2026-11-23: Build and live
+- Live at https://tahoe-tracker.hornof.org: the ten Brownrice cams in Luke's layout (one per resort on home, click through to all of a resort's cams), with each resort's snow numbers and 5-day forecast from a Cloudflare Worker.
+- Four cards, PRs #17–#20. The first proved early that Vail lets Cloudflare's servers fetch its pages, so the GitHub Action fallback was never needed.
+- Luke decided along the way: "stale" when the last fetch failed and the copy is over 6 hours old; retry after 10 minutes; the big cam capped so the tile row fits on a laptop.
