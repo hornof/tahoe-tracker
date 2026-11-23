@@ -11,7 +11,7 @@ A web page that shows the webcams and snow reports of three Tahoe ski resorts, N
 |---|---|
 | See all three resorts at once | From one page load, every resort's cams and snow numbers are on screen at 1440 px wide without clicking anything |
 | Faster than the resort sites | Page shows its content within 3 s on a home connection; checking all three resorts takes one page instead of three sites |
-| Never mislead | Every cam image and snow number shows when it was last updated; anything older than its limit (section 5) is marked stale |
+| Never mislead | Every snow number shows when the resort last updated it and every cam image when the page fetched it; anything stale or broken is marked (requirement 5) |
 | Few hiccups to build and run | Hosting costs $0; the owner does nothing day to day; a broken source shows as broken, not as wrong numbers |
 
 ## 3. Who it's for
@@ -35,10 +35,10 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 
 ### Visitors
 1. **One page, three resorts:** Northstar, Heavenly and Kirkwood each get a column (laptop) with their name, cams and snow numbers. *Check: at 1440 × 900, all three resort names, at least one cam each, and their snow numbers are visible without scrolling sideways.*
-2. **Cams:** each resort shows its cams. A cam is live video where the resort allows its player on other sites, otherwise its latest still image. *Check: each cam is labeled with its name and either plays (labeled "live") or shows an image with its time; while the source works, that image is under 15 minutes old.*
+2. **Cams:** each resort shows all its cams (Northstar 4, Heavenly 4, Kirkwood 2) as still images that the page reloads every 2 minutes. Clicking a cam opens its live video. ([Spike](spikes/webcams.md): the stills update about every 2 minutes; ten live players at once would need about 15 Mbit/s, so live is one at a time.) *Check: each cam shows its name and an image with the time the page fetched it; after 2 minutes the image reloads; clicking it plays that cam live.*
 3. **Snow numbers:** for each resort, new snow overnight, in 24 h, 48 h and 7 days; base depth; lifts open out of total; and current temperature. These are what the resorts publish ([spike](spikes/snow-report-data.md)); there is no 72 h figure (open question 4). *Check: the numbers on the page match the resort's own snow report at the time of the last fetch, compared for all three resorts on one day.*
-4. **Update times:** every cam image and every resort's numbers show when they were last updated, in Pacific time. *Check: each has a visible time; stopping the data fetch for longer than the limit makes it show as stale.*
-5. **Stale and broken sources:** snow numbers older than 6 hours, or a cam image older than 30 minutes, are greyed out and labeled stale. A source that fails shows "not available" with a link to the resort's page. *Check: with one resort's source made to fail in a test, that resort shows "not available" and the other two are unaffected.*
+4. **Update times:** each resort's numbers show the resort's own update time, and each cam image the time the page fetched it, in Pacific time. *Check: each has a visible time; stopping the data fetch for more than 6 hours makes the numbers show as stale.*
+5. **Stale and broken sources:** snow numbers older than 6 hours are greyed out and labeled stale. A cam image that fails to load, or a resort whose numbers fail to fetch, shows "not available" with a link to the resort's page. (Brownrice's stills carry no time of their own, so the page shows when it fetched them.) *Check: with one resort's source made to fail in a test, that resort shows "not available" and the other two are unaffected.*
 6. **Links out:** each resort links to its own cams page and snow-report page. *Check: every link opens the right resort page, checked by hand on all six.*
 7. **Laptop first:** the layout is designed for a laptop screen. *Check: at 1280 px and 1920 px wide, nothing overlaps or is cut off.*
 8. **iPhone, nice-to-have:** if it works on an iPhone too, good. *Check: at 390 px wide the three resorts stack in one column and nothing scrolls sideways. Not a blocker for the first build.*
@@ -53,7 +53,7 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 
 | Screen | What it shows |
 |---|---|
-| Laptop, 1440 px | A table of snow numbers for all three resorts on top, then one column per resort with its cams. Kirkwood shows the stale state; one Heavenly cam shows a failed source. |
+| Laptop, 1440 px | A table of snow numbers for all three resorts on top, then one column per resort with its cam stills. Northstar's Village cam is playing live after a click; Kirkwood's numbers show the stale state; one Heavenly cam shows an image that failed to load. |
 | iPhone, 390 px (nice-to-have) | The three resorts stacked: four numbers in a row, then the cams. |
 **Look:** plain and dense, like a dashboard: numbers large, labels small, update times muted. Light and dark mode follow the computer's setting.
 **Motion:** none beyond what a cam player does itself. Images refresh in place without the page jumping.
@@ -61,7 +61,7 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 **Things a user never sees:** no logins, no ads, no cookie banner (the page sets no cookies).
 
 ## 7. Content
-- **Cams:** the resorts' own cams; which ones and how they're shown depends on the [webcams spike](spikes/webcams.md).
+- **Cams:** all ten cams on the resorts' cams pages come from one provider, Brownrice. Its still-image and live-player addresses load straight into a page on another site, so the cams need no server. Details: [webcams spike](spikes/webcams.md).
 - **Snow numbers:** from the resorts' own snow-report and lift-status pages, which carry the numbers as data in the page, laid out the same way on all three sites. A scheduled GitHub Action fetches the six pages, reads them with one parser, and writes a `data.json` file the page shows. A browser page can't read another site's content, so this runs outside the page. Details: [snow-report data spike](spikes/snow-report-data.md).
 - Nothing is stored about visitors.
 
@@ -87,9 +87,9 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 - **Assumed:** hornof.org's DNS is on Cloudflare, so the subdomain is one DNS record.
 
 ## 11. Technical uncertainties
-1. **Can the resorts' cams be shown live on another site, and if not, as stills no older than a few minutes?** Spike: [webcams](spikes/webcams.md). Answer: *pending*.
+1. **Can the resorts' cams be shown live on another site, and if not, as stills no older than a few minutes?** Spike: [webcams](spikes/webcams.md). Answer: both. Stills load straight from Brownrice and update about every 2 minutes; the live players embed. Brownrice could turn on a per-cam site check at any time, which would stop live embedding; stills would then need a Cloudflare Worker.
 2. **Where can each resort's snow numbers come from reliably, without bot protection blocking a server-side fetch?** Spike: [snow-report data](spikes/snow-report-data.md). Answer: from the resorts' own pages, which answer an honest user agent; one parser covers all three; no free third-party API covers them.
-3. **Can the Hope Valley YouTube cam be embedded?** Covered by the webcams spike. Answer: *pending*.
+3. **Can the Hope Valley YouTube cam be embedded?** Spike: [webcams](spikes/webcams.md). Answer: yes; embed it by its channel, since the video changes whenever the stream restarts.
 
 ## 12. Decisions so far
 | Question | Decision |
@@ -98,11 +98,12 @@ Each requirement ends with the check that proves it. Per the PRD input, nothing 
 | Laptop or phone? | Laptop first; iPhone is a nice-to-have (requirements 7, 8). |
 | Which resorts first? | Northstar, Heavenly, Kirkwood; Hope Valley later (section 9). |
 | Where does it live? | tahoe-tracker.hornof.org on Cloudflare (section 8). |
+| How are the cams shown? | Stills that reload every 2 minutes; click for live; straight from Brownrice, no server (requirement 2). [Spike](spikes/webcams.md). |
 | Where do the snow numbers come from? | The resorts' own pages, read by a scheduled GitHub Action into `data.json` (section 7). [Spike](spikes/snow-report-data.md). |
 
 ## 13. Open questions
-1. **Which cams per resort?** Each resort lists several. Recommended: show every cam the resort lists, in the resort's own order, and drop any that is broken more than it works.
+1. **Which cams per resort?** The resorts list ten in all. Recommended: show all ten, in each resort's own order, and drop any that is broken more than it works.
 2. **How often should snow numbers refresh?** Recommended: every 30 minutes from 5 am to 6 pm Pacific, and every 2 hours overnight. Resorts post their morning report around 5–6 am.
 3. **Temperature units and snow units?** Recommended: °F and inches, as the resorts report them.
 4. **No 72 h snow figure: what instead?** The resorts publish overnight, 24 h, 48 h and 7 days. Options: (a) show those four; (b) build a 72 h total from stored daily 24 h values; (c) use the change in a nearby station's snow depth, labeled as a station reading. Recommended: (a).
-5. **Public page, or personal?** Vail's terms license its content for personal use and forbid posting it on another website. Options: (a) public, as the PRD input says; (b) a personal page, marked so search engines skip it, that shows only the numbers and cams and links to each resort, with no Vail text or logos. Recommended: (b). Friends can still open the link.
+5. **Public page, or personal?** Vail's terms license its content for personal use and forbid posting it on another website. Options: (a) public, as the PRD input says; (b) a personal page, marked so search engines skip it, that shows only the numbers and cams and links to each resort, with no Vail text or logos. Recommended: (b). Friends can still open the link. Either way the cams load straight from Brownrice and are never copied to the site, which is the clearer breach the [webcams spike](spikes/webcams.md) flags.
