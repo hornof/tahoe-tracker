@@ -41,3 +41,11 @@ Kept as we go, for a retrospective at the end of the project. Each stage gets wh
 - One short question at a time; nothing counts as decided until Luke says so.
 - Reread CLAUDE.md at each stage boundary.
 - When a hook pushes for something Luke didn't ask for, tell him in one line and wait.
+
+## TDD, 2026-11-23
+
+### What worked (Claude)
+- A one-page TDD, and the reviewer's questions brought to Luke one at a time in chat. Three decisions took a few minutes.
+
+### What didn't work (Claude)
+- The Worker-or-Action question was asked again although Luke had already agreed hourly commits were bad; he hadn't said "Worker" outright, so Claude asked rather than assume.

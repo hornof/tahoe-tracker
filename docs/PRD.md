@@ -17,15 +17,15 @@ Luke, on a laptop. Friends he sends the link to.
 
 ## 4. User journeys
 1. Open tahoe-tracker.hornof.org: one live cam per resort, each with its snow numbers and forecast.
-2. Click a resort's cam: see all of that resort's cams, one big and the rest as tiles; click a tile to make it the big one.
+2. Click the label or button next to a resort's cam: see all of that resort's cams, one big and the rest as tiles; the button next to a tile makes it the big one. Clicking a cam itself just plays or pauses it.
 3. Use the tabs at the top to switch resorts or go back to all three.
 
 ## 5. Requirements
 Nothing here is a hard must-have (PRD input); this is the first build.
 1. **Snow numbers:** for each resort, what its own snow report shows: 24 h, 48 h and 7-day snowfall, base depth, season total, and the report's update time. *Check: the numbers match each resort's snow report at the time of the last fetch, compared for all three on one day.*
 2. **Forecast:** for each resort, the next 5 days' high, low and expected snowfall, from the same resort page. *Check: matches the forecast on each resort's snow-report page.*
-3. **Cams:** live, laid out as in the [clickable mockup](https://claude.ai/artifact/48pVZCLC6X9PQEdoVRSQza#play-Live): the home view shows one live cam per resort; clicking one shows all of that resort's cams (Northstar 4, Heavenly 4, Kirkwood 2), one big and the rest as tiles; tabs switch resorts or return home. If a cam is down, its spot shows a placeholder. *Check: every cam can be reached and plays live with its name; a cam made to fail shows the placeholder.*
-4. **Fetch:** a GitHub Action reads the resort pages once an hour and writes the numbers the page shows. *Check: the update time on the page is never more than about an hour behind the resort's report.*
+3. **Cams:** live, laid out as in the [clickable mockup](https://claude.ai/artifact/48pVZCLC6X9PQEdoVRSQza#play-Live): the home view shows one live cam per resort; a label or button next to it shows all of that resort's cams (Northstar 4, Heavenly 4, Kirkwood 2), one big and the rest as tiles; tabs switch resorts or return home. If a cam is down, its spot shows a placeholder. *Check: every cam can be reached and plays live with its name; a cam made to fail shows the placeholder.*
+4. **Fetch:** a Cloudflare Worker reads the resort pages at most once an hour and serves the numbers the page shows (Luke's choice on [#7](https://github.com/hornof/tahoe-tracker/issues/7)). *Check: the update time on the page is never more than about an hour behind the resort's report.*
 5. **Broken shows as broken:** if a fetch fails or a cam image won't load, that resort or cam says "not available" and links to the resort's page; numbers our fetch hasn't refreshed in 6 hours say "stale". *Check: with one resort's fetch made to fail in a test, it shows "not available" and the other two are unaffected.*
 6. **Laptop first; iPhone nice-to-have.** *Check: works at 1280 and 1920 px wide. At 390 px the resorts stack in one column if that's easy; not a blocker.*
 
@@ -51,11 +51,11 @@ Hope Valley cam and weather, lift status, current temperature, road conditions. 
 
 ## 10. Risks and assumptions
 - Vail or Brownrice changes its pages: the fetch or a cam breaks, and requirement 5 makes it visible. Likely a few times a season.
-- Untested: whether Vail lets GitHub's servers fetch its pages (it lets a home connection through). The first build card checks this before anything else; the fallback is a Cloudflare Worker.
+- Untested: whether Vail lets Cloudflare's servers fetch its pages (it lets a home connection through). The first build card checks this before anything else; the fallback is a GitHub Action.
 
 ## 11. Technical uncertainties
 1. **Can the cams be shown on another site?** Yes, live or as stills. [Spike](spikes/webcams.md).
-2. **Where do the snow numbers come from?** The resorts' own pages; one parser for all three. [Spike](spikes/snow-report-data.md). Fetching from GitHub's servers is untested (section 10).
+2. **Where do the snow numbers come from?** The resorts' own pages; one parser for all three. [Spike](spikes/snow-report-data.md). Fetching from Cloudflare's servers is untested (section 10).
 
 ## 12. Decisions so far
 | Question | Decision |
@@ -63,6 +63,8 @@ Hope Valley cam and weather, lift status, current temperature, road conditions. 
 | Which numbers? | What the resort shows: 24 h, 48 h, 7 days, base, season total (Luke, review). No 72 h. |
 | Forecast? | Yes: 5-day highs, lows and snow (Luke, review). |
 | How often to fetch? | Once an hour (Luke, review). |
+| What does clicking a cam do? | Plays or pauses it, everywhere. A label or button next to each cam opens its resort (Luke, 2026-11-22, TDD review Decision 12). |
+| What fetches the numbers? | A Cloudflare Worker, not an hourly GitHub Action (Luke, 2026-11-22, on [#7](https://github.com/hornof/tahoe-tracker/issues/7)). |
 | Hope Valley? | Later (Luke, PRD input and review). |
 | Terms of use? | Personal use; no special handling (Luke, review). |
 | Cams: stills or all live? | All live (Luke, 2026-11-22, review Decision 16). |
