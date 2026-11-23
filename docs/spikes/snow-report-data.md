@@ -4,13 +4,13 @@ PRD issue #5. Spike run on 2026-11-22, Sunday evening Pacific time (about 9 PM P
 
 ## Question
 
-Where can tahoe-tracker get Northstar's, Heavenly's and Kirkwood's snow-report numbers reliably, and what does each source cost to build and keep working? The numbers wanted are new snow (24 h, 48 h, 72 h), base depth, lifts and terrain open, temperature, and the time the report was updated. Later: Hope Valley weather and snow.
+Where can tahoe-tracker get Northstar's, Heavenly's and Kirkwood's snow-report numbers reliably, and what does each source cost to build and keep working? The numbers wanted are the ones each resort's own snow report shows, and the time the report was updated. Later: Hope Valley weather and snow.
 
 The page itself can't read another site, so the fetch runs outside it: a scheduled GitHub Action that writes a JSON file, or a Cloudflare Worker.
 
 ## Short answer
 
-The resorts' own pages are the best value by a wide margin. All three Vail sites put the full snow report, a weather forecast and the lift and run status into the HTML as JSON objects (`FR.snowReportData`, `FR.forecasts`, `FR.TerrainStatusFeed`). The objects have the same names and the same fields on all three sites, so **one parser covers all three resorts**. A plain server-side request gets them. A proof-of-concept script of about 60 lines produced every number the PRD asks for except a 72-hour total, which Vail doesn't publish.
+The resorts' own pages are the best value by a wide margin. All three Vail sites put the full snow report, a weather forecast and the lift and run status into the HTML as JSON objects (`FR.snowReportData`, `FR.forecasts`, `FR.TerrainStatusFeed`). The objects have the same names and the same fields on all three sites, so **one parser covers all three resorts**. A plain server-side request gets them. A proof-of-concept script of about 60 lines produced every number the PRD asks for.
 
 No third-party source is free, covers all three resorts, and has an API open to a personal project. For weather and snow depth at Hope Valley, the free public APIs from the National Weather Service, CDEC and NRCS SNOTEL all work with no sign-up.
 
@@ -45,7 +45,6 @@ Heavenly and Kirkwood had the same keys. Kirkwood: 48 h = 1 in, base 37 in, `Ove
 
 Points to note:
 
-- There is **no 72-hour field**. Vail publishes overnight, 24 h, 48 h and 7 days. A 12-hour value exists in the settings (`Show12Hr: false`) but isn't shown.
 - Numbers arrive as **strings** ("0", "48").
 - The update time is **display text only** ("Updated November 22, 2026 at 6:31 AM PST"), with no ISO timestamp. The parser has to read the text and keep the PST/PDT label.
 - `FR.snowReportSettings` differs by resort: Kirkwood shows acres, Heavenly hides lift and run counts. The data is the same either way; only what the resort's own page displays changes.
@@ -110,7 +109,7 @@ What follows, as a reading for a personal project and not legal advice: fetching
 |---|---|---|---|---|---|
 | **Liftie** (liftie.info, open source, BSD-3-Clause) | Yes: `kirkwood`, `northstar`, `heavenly` are in the repo | Has `GET https://liftie.info/api/resort/<resort>`, but it **returned 403 with a Cloudflare "Just a moment..." challenge** to both curl and browser user agents | Free, no sign-up | n/a (blocked) | Lift status only, no snow numbers. Its Vail parser (`lib/tools/vail.js`) reads the same `FR.TerrainStatusFeed` this spike found, which confirms the approach and the status codes. Useful as a reference, not as a source. |
 | **OpenSnow** | Yes | API is for "commercial partners" only, custom price by quote, API key, must show "Powered by OpenSnow" | Quote; sign-up | Kirkwood page loaded (Cloudflare, 200), data in a Nuxt payload that is hard to parse (`lifts_open`, `snow_depth`, `precip_snow` keys present) | robots.txt disallows `/publicapi`, `/widget/*`, `/mtn/*` and sets `Content-Signal: ai-train=no, use=reference`. Vail's own forecast is from OpenSnow anyway. |
-| **OnTheSnow / Mountain News** | Yes | Partner API (`partner.docs.onthesnow.com`) for media and platforms, "contact us" | Fee-based; sign-up | Kirkwood page answered curl (nginx, 200). Embedded data had `last24`, `last48`, `last72`, `base`, `updatedAt: 2026-11-20T16:13:18+00:00`, **two days older** than Kirkwood's own report (Nov 22, 11:32 AM) | It is the only source seen with a **72 h** field, but it was stale and is in React server-component data that is awkward to parse. |
+| **OnTheSnow / Mountain News** | Yes | Partner API (`partner.docs.onthesnow.com`) for media and platforms, "contact us" | Fee-based; sign-up | Kirkwood page answered curl (nginx, 200). Embedded data had `last24`, `last48`, `base`, `updatedAt: 2026-11-20T16:13:18+00:00`, **two days older** than Kirkwood's own report (Nov 22, 11:32 AM) | Its data was stale and is in React server-component data that is awkward to parse. |
 | **Weather Unlocked ski API** | Says 3,000+ ski areas; I didn't confirm these three | Free trial, then paid; the pricing page wasn't readable from here | Sign-up needed | Not tested (would need sign-up) | Its product is **mountain forecasts** (base, mid and top elevations, 4 times a day), not the resort's reported base, lifts or update time. |
 | **SnoCountry** | Probably | No public API, pricing or terms found | Unknown; contact them | Not tested | A not-for-profit whose feed is resold to media and apps. |
 | The Weather Company, Foreca, WorldWeatherOnline | Partly | Commercial APIs; WorldWeatherOnline advertises a small free tier, for forecasts only | Sign-up | Not tested | Forecasts, not resort reports. |
@@ -144,7 +143,7 @@ The forecast endpoint gave text such as "Tonight: 13F Chance Light Snow then Par
   - 462 Ebbetts Pass, 8,660 ft: 39 in
   - 697 Poison Flat, 7,730 ft: 24 in
 
-The difference between successive hourly depth readings gives a measured new-snow figure, including a real 72-hour total. Sensors are noisy, though (settling, wind), so treat it as approximate.
+The difference between successive hourly depth readings gives a measured new-snow figure. Sensors are noisy, though (settling, wind), so treat it as approximate.
 
 ## Options
 
@@ -152,7 +151,7 @@ The difference between successive hourly depth readings gives a measured new-sno
 
 An Action runs on a schedule, every 30–60 minutes from about 5 AM to 6 PM Pacific, and fetches 6 pages: snow report and lift status for 3 resorts. One parser extracts the three `FR.*` objects and writes one `data.json` for the static page.
 
-- **Fit:** every number the PRD asks for except a true 72 h total (see below). Temperature comes from `FR.forecasts` (which is OpenSnow data). The update time comes from the resort's own text.
+- **Fit:** every number the PRD asks for. Temperature comes from `FR.forecasts` (which is OpenSnow data). The update time comes from the resort's own text.
 - **Work:** small. The parser is about 60 lines (`vail_report.py` is a working proof). Add tests on saved HTML fixtures. The real work is error handling: detect the 1,868-byte Akamai page and the waiting room, keep the last good data, and show its age on the page.
 - **Upkeep:** breaks if Vail renames the `FR.*` objects or tightens Akamai. When that happens it fails loudly (object missing), so it is easy to notice; Liftie's parser is a second set of eyes on the same markup. GitHub turns scheduled workflows off after 60 days without repository activity in a public repo, so the Action should commit `data.json` (or something else must keep the repo active). GitHub's cron can run late by several minutes, which is fine here.
 - **Load and terms:** about 6 requests per run, a few dozen a day. robots.txt allows it. Terms caveat as in section 4.
@@ -167,7 +166,7 @@ The same parser in JavaScript in a Worker. Either it fetches on each page view, 
 
 ### C. A third-party API (OpenSnow, OnTheSnow, Weather Unlocked, SnoCountry)
 
-- **Fit:** the only one that may offer 72 h (OnTheSnow), but the data was two days stale. Weather Unlocked is forecasts, not reports.
+- **Fit:** OnTheSnow's data was two days stale. Weather Unlocked is forecasts, not reports.
 - **Work and cost:** sign-ups, commercial-partner gates, quotes or paid plans; attribution rules. Not a fit for a free personal page, and the spike didn't sign up for any.
 
 ### D. Liftie for lifts
@@ -178,23 +177,13 @@ Its API was behind a Cloudflare challenge (403), so it isn't usable server-side.
 
 NWS `api.weather.gov` for the forecast and the latest observation at HVSC1. CDEC CAP (Caples Lake) and SNOTEL 1051 (Burnside Lake) for measured snow depth. All free, keyless, JSON, and they answered on the first try. About a day of work to add to option A's Action.
 
-## The 72-hour question
-
-None of the free sources gives a resort-reported 72-hour total. Choices, cheapest first:
-
-1. Show overnight, 24 h, 48 h and 7 days, which is what the resorts publish, and drop 72 h.
-2. Have the Action keep a small history of each resort's 24 h value and add up the last three days. That only works if the Action runs every day, and it inherits the resort's reporting-day quirks.
-3. Use the change in snow depth at the nearby station (CAP for Kirkwood, HVN for Heavenly) as a measured, approximate 72 h figure, labelled as a station reading.
-
-This needs a decision in the PRD.
-
 ## Recommendation
 
 **Option A is clearly the best value for the effort:** a scheduled GitHub Action fetches the six Vail pages with an honest user agent, parses the three `FR.*` objects with one parser, and commits `data.json` to the static site. Add NWS and CDEC/SNOTEL to the same Action when Hope Valley comes. Before building the page, the first card should:
 
 1. Run the fetch once from a real GitHub Action runner and confirm the pages answer as they did from home (the one untested risk).
 2. Check the lift and run counts during operating hours.
-3. Get Luke's call on the terms-of-use point (a public page vs a personal, `noindex` page that links back) and on 72 h.
+3. Luke's calls, from his review of PR #6: personal use, no special handling for the terms; fetch once an hour; show what the resort's report shows.
 
 ## Files in the spike scratch folder (not for the repo)
 
