@@ -67,3 +67,22 @@ Kept as we go, for a retrospective at the end of the project. Each stage gets wh
 
 ### Takeaway
 What made this stage pleasant: one short doc, a few simple questions one at a time, and Claude handling the small stuff itself. Ask Luke only what needs him.
+
+## Setup: CI and Cloudflare, 2026-11-23
+
+### What worked (Luke)
+- **Clear, easy-to-follow Cloudflare instructions.** That saved a ton of time. When small mistakes came up, which they always will, they got worked through together quickly.
+- **No more bizarre, contradictory answers out of nowhere.** Plain, consistent replies kept things moving.
+
+### What worked (Claude)
+- Short numbered click steps, one part at a time, with the exact values to type.
+- Looking at Luke's screen directly instead of asking for screenshots.
+- Checking each result (the preview link, the live site) before moving on, and saying up front when a failure was expected (the first deploy before `site/` existed).
+
+### What didn't work (Claude)
+- **A stale menu path.** "Workers & Pages" had moved under Compute, and the Pages option sat behind a "Continue to Pages" link. Luke's corrected path is saved for next time.
+- **A long detour about sessions.** Claude kept recommending a fresh session with reasons that argued the opposite, and called its own suggestion a "rule". Luke chose to stay in this session.
+
+### Noted for later (Luke)
+- **The progress page needs a lot of work.** Luke understands every piece on it, but the layout is hard to read and he can't get useful information from it. It comes from apb's `scripts/progress-page.py`, so the redesign belongs to apb.
+- **What it used to look like, and should again (Luke).** The sketch-gallery map had a "Now:" line and one box per stage, each marked Done or Now, with the current stage filled in. apb commit af1c43b ("Map: no copied status", 2026-11-15) removed both, and the progress page copied the plain list. The "3 of 3 board items in Done" bar is misleading too: it counts only the cards on the board, so it reads 100% after planning.
