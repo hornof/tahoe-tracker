@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { stubBrownrice } from './stub.js';
+import { stubSnow } from './snow-stub.js';
 
 // The oracle is site/cams.json itself: every check below is about the page matching the list.
 const list = JSON.parse(readFileSync(new URL('../../site/cams.json', import.meta.url), 'utf8'));
@@ -20,6 +21,8 @@ async function resortView(page) {
 
 test.beforeEach(async ({ page }) => {
   await stubBrownrice(page);
+  // Card #16: every check here, the layout ones included, runs with the snow numbers on the page.
+  await stubSnow(page);
 });
 
 test('home shows three live players, one per resort, each with its name', async ({ page }) => {
@@ -162,6 +165,7 @@ test('tabs switch resorts and go home, and mark the current one', async ({ page 
 test('a cam whose still fails shows "not available" and the resort link', async ({ page }) => {
   await page.unrouteAll();
   await stubBrownrice(page, { down: ['heavenlydipper', 'northstarsnowstake'] });
+  await stubSnow(page); // so the only "not available" here is the cam's
   await page.goto('/');
   const heavenly = page.locator('section.resort[data-resort="heavenly"]');
   const r = RESORTS.find((x) => x.id === 'heavenly');
@@ -205,6 +209,7 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
   test(`no sideways scroll and no overlap on ${view || 'home'} @width`, async ({ page }) => {
     await page.goto(`/#${view}`);
     await page.locator('iframe').first().waitFor();
+    await page.locator('[data-stat]').first().waitFor();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);
     const narrow = page.viewportSize().width < 600;
