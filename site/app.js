@@ -2,6 +2,7 @@
 // The live players stay clickable everywhere (play, pause); the label or button next to each cam
 // navigates (Luke, Decision 12). Nothing is laid over a player.
 import { embedUrl, snapshotUrl, resorts, parseHash, hashFor } from './cams.js';
+import { STATS, shown, weekday, pacific, fetchedLine } from './snow.js';
 
 const main = document.getElementById('main');
 const nav = document.getElementById('tabs');
@@ -59,10 +60,86 @@ function check(cam, resort) {
   img.src = snapshotUrl(cam.id);
 }
 
-// Room for card #16's snow numbers and forecast.
+// The snow numbers from /api/snow, fetched once per page load (card #16). Until they arrive each
+// resort says "Loading"; if the request fails, each says "Not available".
+let snow = { state: 'loading' }; // { state: 'loading' } | { state: 'ok', byId } | { state: 'failed' }
+
 function numbers(resort) {
-  return el('div', { class: 'numbers', 'data-numbers': resort.id },
-    el('p', { class: 'muted', text: 'Snow numbers and forecast: coming soon.' }));
+  return el('div', { class: 'numbers', 'data-numbers': resort.id }, numbersContent(resort));
+}
+
+function notAvailable(why, link) {
+  return [
+    el('p', { class: 'flag' }, el('strong', { text: 'Not available' }), `: ${why}`),
+    link ? el('a', { href: link.href, target: '_blank', rel: 'noopener', text: link.text }) : null,
+  ];
+}
+
+function numbersContent(resort) {
+  if (snow.state === 'loading') return [el('p', { class: 'muted', text: 'Loading snow numbers…' })];
+  // With no /api/snow answer there is no report link, so link to the resort's page from cams.json.
+  if (snow.state === 'failed') {
+    return notAvailable("the snow numbers didn't load. Try reloading.",
+      { href: resort.camsPage, text: `See ${resort.name}'s own page` });
+  }
+  const r = snow.byId.get(resort.id);
+  if (!r || r.status === 'not-available' || !r.report) {
+    return notAvailable("we haven't been able to read this resort's snow report yet.",
+      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null);
+  }
+  const { report } = r;
+  return [
+    r.status === 'stale'
+      ? el('p', { class: 'flag' }, el('strong', { text: 'Stale' }),
+        `: our last fetch failed, so these numbers are from ${pacific(r.fetchedAt) || 'an earlier fetch'}.`)
+      : null,
+    el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
+      el('dt', { text: s.label }),
+      el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
+    el('p', { class: 'muted updated', text: report.lastUpdatedText || 'The report gives no update time.' }),
+    el('p', { class: 'muted fetched', text: fetchedLine(r) }),
+    forecast(r.forecast),
+  ];
+}
+
+function forecast(days) {
+  if (!Array.isArray(days) || days.length === 0) return el('p', { class: 'muted', text: 'No forecast in the report.' });
+  return el('table', { class: 'forecast' },
+    el('caption', { text: '5-day forecast' }),
+    el('thead', {},
+      el('tr', {},
+        el('td', {}),
+        el('th', { scope: 'colgroup', colspan: '2', text: '°F' }),
+        el('th', { scope: 'colgroup', colspan: '2', text: 'Snow, in' })),
+      el('tr', {},
+        el('td', {}),
+        ...['High', 'Low', 'Day', 'Night'].map((t) => el('th', { scope: 'col', text: t })))),
+    el('tbody', {}, days.map((d) => el('tr', { 'data-date': d.date },
+      el('th', { scope: 'row', title: d.date, text: weekday(d.date) }),
+      el('td', { text: `${shown(d.highF)}°` }),
+      el('td', { text: `${shown(d.lowF)}°` }),
+      el('td', { text: shown(d.snowDayInches) }),
+      el('td', { text: shown(d.snowNightInches) })))));
+}
+
+async function loadSnow() {
+  try {
+    const res = await fetch('/api/snow', { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(`/api/snow: ${res.status}`);
+    const body = await res.json();
+    snow = { state: 'ok', byId: new Map(body.resorts.map((r) => [r.id, r])) };
+  } catch {
+    snow = { state: 'failed' };
+  }
+}
+
+// Fill in the panels already on the page once the numbers arrive; later renders read `snow` directly.
+function fillNumbers(list) {
+  const byId = new Map(resorts(list).map((r) => [r.id, r]));
+  for (const box of document.querySelectorAll('.numbers[data-numbers]')) {
+    const r = byId.get(box.dataset.numbers);
+    if (r) box.replaceChildren(...numbersContent(r).filter(Boolean));
+  }
 }
 
 function home(rs) {
@@ -135,12 +212,14 @@ function render(list) {
 }
 
 async function start() {
+  const snowLoaded = loadSnow(); // in parallel with the cam list; never throws
   try {
     const res = await fetch('cams.json');
     if (!res.ok) throw new Error(`cams.json: ${res.status}`);
     const list = await res.json();
     window.addEventListener('hashchange', () => render(list));
     render(list);
+    snowLoaded.then(() => fillNumbers(list));
   } catch (err) {
     main.replaceChildren(el('p', { class: 'load-error', role: 'alert', text: `The cam list didn't load (${err.message}). Try reloading.` }));
   }

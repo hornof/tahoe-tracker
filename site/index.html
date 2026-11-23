@@ -11,14 +11,14 @@
 :root {
   --bg: #f5f6f4; --fg: #1b2126; --card: #ffffff; --line: #d6dad5; --soft-line: #e3e6e2;
   --muted: #59636b; --text2: #3b444b; --link: #1d5c8a; --link-hover: #123d5c;
-  --tab-line: #c9cec8; --spot: #9fb3c4; --down-bg: #eceeea;
+  --tab-line: #c9cec8; --spot: #9fb3c4; --down-bg: #eceeea; --flag-bg: #f7e9c6;
   --head: 'Space Grotesk', Inter, system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #161816; --fg: #e8eae6; --card: #1f2220; --line: #343833; --soft-line: #2b2f2b;
     --muted: #a2aaa3; --text2: #c6ccc6; --link: #7fb6e0; --link-hover: #a9d0ef;
-    --tab-line: #464b45; --spot: #2c3a46; --down-bg: #262a27;
+    --tab-line: #464b45; --spot: #2c3a46; --down-bg: #262a27; --flag-bg: #3d3420;
   }
 }
 * { box-sizing: border-box; }
@@ -60,7 +60,22 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
   display: inline-flex; align-items: center;
 }
 .pill:hover { border-color: var(--fg); color: var(--fg); }
-.numbers { border-top: 1px solid var(--soft-line); padding-top: 10px; }
+/* Snow numbers (card #16): big numbers, small labels, muted times (PRD, Look). */
+.numbers { border-top: 1px solid var(--soft-line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.numbers > p { margin: 0; }
+.stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px 10px; }
+.stat { min-width: 0; }
+.stat dt { font-size: 12px; color: var(--muted); }
+.stat dd { margin: 0; font: 700 22px/1.15 var(--head); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat .unit { font: 500 12px Inter, system-ui, sans-serif; color: var(--muted); }
+.flag { padding: 6px 10px; border-radius: 6px; background: var(--flag-bg); color: var(--fg); font-size: 14px; }
+.forecast { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.forecast caption { text-align: left; font-weight: 600; padding-bottom: 2px; }
+.forecast th, .forecast td { padding: 3px 4px; text-align: right; white-space: nowrap; }
+.forecast thead th { font-weight: 500; font-size: 12px; color: var(--muted); }
+.forecast thead th[scope="colgroup"] { text-align: center; padding-bottom: 0; }
+.forecast tbody th { text-align: left; font-weight: 600; }
+.forecast tbody tr { border-top: 1px solid var(--soft-line); }
 
 /* Home: three resorts side by side on a laptop, stacked on a phone. */
 .home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
