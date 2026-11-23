@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { stubBrownrice } from './stub.js';
 import { stubSnow, snowBody, PARSED, REPORT_URL } from './snow-stub.js';
 
@@ -9,6 +10,8 @@ const IDS = ['northstar', 'heavenly', 'kirkwood'];
 const NAMES = { northstar: 'Northstar', heavenly: 'Heavenly', kirkwood: 'Kirkwood' };
 const KEYS = ['twentyFourHourInches', 'fortyEightHourInches', 'sevenDayInches', 'baseDepthInches', 'seasonTotalInches'];
 const LABELS = ['24 h', '48 h', '7 days', 'Base', 'Season'];
+const CAMS_PAGE = Object.fromEntries(
+  JSON.parse(readFileSync(new URL('../../site/cams.json', import.meta.url), 'utf8')).resorts.map((r) => [r.id, r.camsPage]));
 const dash = (v) => (v === null || v === undefined ? '–' : String(v));
 
 // Where a resort's numbers are in each view.
@@ -72,7 +75,7 @@ test('every resort says when we fetched its numbers, in Pacific time', async ({ 
     await goto(page, view);
     for (const id of view === 'home' ? IDS : [view]) {
       // snow-stub's "ok" copy was fetched 30 minutes before 10:00 UTC on Monday 2026-11-23.
-      await expect(panel(page, view, id).locator('.fetched')).toHaveText('Fetched Mon 1:30 AM PST');
+      await expect(panel(page, view, id).locator('.fetched')).toHaveText('Fetched Mon Nov 23, 1:30 AM PST');
     }
   }
 });
@@ -83,7 +86,7 @@ test('old numbers the Worker is refreshing show their fetch time and "refreshing
     await goto(page, view);
     if (view !== 'northstar') {
       const p = panel(page, view, 'heavenly');
-      await expect(p.locator('.fetched')).toContainText('Fetched Sun 11:00 PM PST');
+      await expect(p.locator('.fetched')).toContainText('Fetched Sun Nov 22, 11:00 PM PST');
       await expect(p.locator('.fetched')).toContainText('refreshing');
       await expectNumbers(p, 'heavenly');
     }
@@ -98,7 +101,7 @@ test('a stale resort says "stale" in words and keeps its numbers; the others don
   await expect(k.locator('.flag')).toBeVisible();
   await expect(k.locator('.flag')).toContainText(/stale/i);
   // The stale copy was fetched 7 hours before 10:00 UTC on Monday: 7:00 PM Sunday, Pacific.
-  await expect(k.locator('.flag')).toContainText('Sun 7:00 PM PST');
+  await expect(k.locator('.flag')).toContainText('Sun Nov 22, 7:00 PM PST');
   await expectNumbers(k, 'kirkwood');
   for (const id of ['northstar', 'heavenly']) {
     await expect(panel(page, 'home', id)).not.toContainText(/stale/i);
@@ -125,17 +128,21 @@ test('a resort with no numbers says "not available" and links to its snow report
   }
 });
 
-test('if /api/snow fails, every resort says "not available" and the cams still play', async ({ page }) => {
+test('if /api/snow fails, every resort says "not available", links to its own page, and the cams still play', async ({ page }) => {
   await stubSnow(page, { status: 500 });
   await page.goto('/');
   for (const id of IDS) {
     const p = panel(page, 'home', id);
     await expect(p.getByText(/not available/i)).toBeVisible();
     await expect(p.locator('[data-stat]')).toHaveCount(0);
+    // With no /api/snow answer there is no reportUrl, so the link is the resort's page from cams.json.
+    await expect(p.getByRole('link', { name: `See ${NAMES[id]}'s own page` })).toHaveAttribute('href', CAMS_PAGE[id]);
   }
   await expect(page.locator('iframe')).toHaveCount(3);
   await page.goto('/#heavenly');
-  await expect(panel(page, 'heavenly', 'heavenly').getByText(/not available/i)).toBeVisible();
+  const h = panel(page, 'heavenly', 'heavenly');
+  await expect(h.getByText(/not available/i)).toBeVisible();
+  await expect(h.getByRole('link', { name: "See Heavenly's own page" })).toHaveAttribute('href', CAMS_PAGE.heavenly);
 });
 
 test('the numbers stay right when switching views back and forth', async ({ page }) => {

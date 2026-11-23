@@ -68,19 +68,24 @@ function numbers(resort) {
   return el('div', { class: 'numbers', 'data-numbers': resort.id }, numbersContent(resort));
 }
 
-function notAvailable(resort, why, reportUrl) {
+function notAvailable(why, link) {
   return [
     el('p', { class: 'flag' }, el('strong', { text: 'Not available' }), `: ${why}`),
-    reportUrl ? el('a', { href: reportUrl, target: '_blank', rel: 'noopener', text: `See ${resort.name}'s snow report` }) : null,
+    link ? el('a', { href: link.href, target: '_blank', rel: 'noopener', text: link.text }) : null,
   ];
 }
 
 function numbersContent(resort) {
   if (snow.state === 'loading') return [el('p', { class: 'muted', text: 'Loading snow numbers…' })];
-  if (snow.state === 'failed') return notAvailable(resort, "the snow numbers didn't load. Try reloading.");
+  // With no /api/snow answer there is no report link, so link to the resort's page from cams.json.
+  if (snow.state === 'failed') {
+    return notAvailable("the snow numbers didn't load. Try reloading.",
+      { href: resort.camsPage, text: `See ${resort.name}'s own page` });
+  }
   const r = snow.byId.get(resort.id);
   if (!r || r.status === 'not-available' || !r.report) {
-    return notAvailable(resort, "we haven't been able to read this resort's snow report yet.", r?.reportUrl);
+    return notAvailable("we haven't been able to read this resort's snow report yet.",
+      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null);
   }
   const { report } = r;
   return [

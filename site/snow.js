@@ -22,14 +22,16 @@ export function weekday(date) {
   return WEEKDAYS[new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()];
 }
 
-// An ISO instant as Pacific time, the resorts' own: "Sun 11:00 PM PST" (PDT in summer).
+// An ISO instant as Pacific time, the resorts' own: "Sun Nov 22, 11:00 PM PST" (PDT in summer).
+// The date is there so a copy more than a week old can't be read as this week's (PR #20 review).
 export function pacific(iso) {
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles', weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    timeZone: 'America/Los_Angeles', weekday: 'short', month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   }).formatToParts(new Date(t)).map((p) => [p.type, p.value]));
-  return `${parts.weekday} ${parts.hour}:${parts.minute} ${parts.dayPeriod} ${parts.timeZoneName}`;
+  return `${parts.weekday} ${parts.month} ${parts.day}, ${parts.hour}:${parts.minute} ${parts.dayPeriod} ${parts.timeZoneName}`;
 }
 
 // When we last fetched the numbers, so old numbers aren't read as current (PR #18 review, Note 2).
