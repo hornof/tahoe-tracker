@@ -165,6 +165,7 @@ test('/api/snow reports an upstream error status', async () => {
   const { res, body } = await call(fakeFetch('Forbidden', { status: 403 }));
   assert.equal(res.status, 502);
   assert.equal(body.ok, false);
+  assert.equal(body.reason, 'upstream-status');
   assert.equal(body.upstream.status, 403);
 });
 
