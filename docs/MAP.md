@@ -80,3 +80,6 @@ Services many kinds of project use: payments (Stripe), email sending, error trac
 | Piece | What it is | When it's used |
 |---|---|---|
 | Claude's GitHub account: https://github.com/hornof-claude | The account Claude Code acts as on GitHub, a collaborator on the repo and the board (apb-setup step 5). Its token's expiry: never. | Every stage |
+| Cloudflare Pages project `tahoe-tracker` (Luke's Cloudflare account; Compute → Workers & Pages) | Hosts the site from `site/` and the Worker for the snow numbers. Main deploys to production; each PR gets a preview link. Free plan. | From setup on |
+| Live site: https://tahoe-tracker.hornof.org (also https://tahoe-tracker.pages.dev) | The product. The subdomain is a custom domain on the Pages project; hornof.org's DNS is on Cloudflare. | After every merge |
+| Workers KV namespace `tahoe-tracker-snow`, bound as `SNOW` for production and preview | Stores the last good snow numbers per resort (TDD). Free plan. | From build piece 2 on |
