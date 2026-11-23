@@ -1,0 +1,19 @@
+{
+  "resorts": [
+    { "id": "northstar", "name": "Northstar", "camsPage": "https://www.northstarcalifornia.com/the-mountain/mountain-conditions/mountain-cams.aspx" },
+    { "id": "heavenly", "name": "Heavenly", "camsPage": "https://www.skiheavenly.com/the-mountain/mountain-conditions/mountain-cams.aspx" },
+    { "id": "kirkwood", "name": "Kirkwood", "camsPage": "https://www.kirkwood.com/the-mountain/mountain-conditions/mountain-cams.aspx" }
+  ],
+  "cams": [
+    { "resort": "northstar", "name": "Village", "id": "northstarvillage" },
+    { "resort": "northstar", "name": "Snow Stake", "id": "northstarsnowstake" },
+    { "resort": "northstar", "name": "Mid Mountain", "id": "northstarmidmountain" },
+    { "resort": "northstar", "name": "Mt. Pluto Summit", "id": "northstarspluto" },
+    { "resort": "heavenly", "name": "Top of Dipper", "id": "heavenlydipper" },
+    { "resort": "heavenly", "name": "Mid Station", "id": "heavenlymidstation" },
+    { "resort": "heavenly", "name": "Top of Tram", "id": "heavenlytram" },
+    { "resort": "heavenly", "name": "East Peak", "id": "heavenlyeastpeak" },
+    { "resort": "kirkwood", "name": "Cornice", "id": "kirkwoodcornice" },
+    { "resort": "kirkwood", "name": "Red Cliffs", "id": "kirkwoodredcliffs" }
+  ]
+}

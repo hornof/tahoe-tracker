@@ -5,16 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tahoe Tracker</title>
 <meta name="description" content="Live webcams and snow reports for Northstar, Heavenly and Kirkwood.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap">
 <style>
-body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f5f6f4; color: #1b2126; }
-main { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
-@media (prefers-color-scheme: dark) { body { background: #161816; color: #e8eae6; } }
+:root {
+  --bg: #f5f6f4; --fg: #1b2126; --card: #ffffff; --line: #d6dad5; --soft-line: #e3e6e2;
+  --muted: #59636b; --text2: #3b444b; --link: #1d5c8a; --link-hover: #123d5c;
+  --tab-line: #c9cec8; --spot: #9fb3c4; --down-bg: #eceeea;
+  --head: 'Space Grotesk', Inter, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161816; --fg: #e8eae6; --card: #1f2220; --line: #343833; --soft-line: #2b2f2b;
+    --muted: #a2aaa3; --text2: #c6ccc6; --link: #7fb6e0; --link-hover: #a9d0ef;
+    --tab-line: #464b45; --spot: #2c3a46; --down-bg: #262a27;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 Inter, system-ui, sans-serif; }
+a { color: var(--link); }
+a:hover { color: var(--link-hover); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.page { max-width: 1376px; margin: 0 auto; padding: 24px 32px 40px; display: flex; flex-direction: column; gap: 18px; }
+main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+h1 { margin: 0; font: 700 28px var(--head); }
+h2 { margin: 0; font: 600 22px var(--head); }
+nav { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab {
+  font: 500 15px Inter, system-ui, sans-serif; padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center;
+  border-radius: 999px; border: 1px solid var(--tab-line); background: var(--card); color: var(--fg); text-decoration: none;
+}
+.tab:hover { color: var(--fg); border-color: var(--fg); }
+.tab[aria-current="page"] { font-weight: 600; background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.muted { color: var(--muted); font-size: 13px; margin: 0; }
+.intro { margin: 0; color: var(--muted); font-size: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+
+/* A cam's spot: 16:9, the live player fills it. Nothing is laid over it (Decision 12). */
+.spot { position: relative; aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: var(--spot); }
+.spot iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.down {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px; text-align: center; background: var(--down-bg); color: var(--text2); font-size: 14px;
+}
+.down p { margin: 0; font-weight: 600; }
+.cam-name { font-weight: 600; }
+.pill {
+  font: 500 13px Inter, system-ui, sans-serif; padding: 6px 12px; min-height: 32px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--tab-line); background: var(--card); color: var(--fg); text-decoration: none; white-space: nowrap;
+  display: inline-flex; align-items: center;
+}
+.pill:hover { border-color: var(--fg); color: var(--fg); }
+.numbers { border-top: 1px solid var(--soft-line); padding-top: 10px; }
+
+/* Home: three resorts side by side on a laptop, stacked on a phone. */
+.home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.resort { padding: 14px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card-head, .cam-bar, figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.card-head { align-items: baseline; }
+
+/* Resort view: one big cam, the rest as tiles, the numbers beside (below on a phone). */
+.resort-view { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+.cams { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.big .spot { border-radius: 10px; }
+.big-name { font-size: 20px; }
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tile .cam-name { font-size: 14px; }
+.resort-info { flex: 1 1 260px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.resort-info h2 { font-size: 24px; }
+
+@media (max-width: 760px) {
+  .page { padding: 16px 16px 32px; }
+  .home-grid { grid-template-columns: minmax(0, 1fr); }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cams { flex-basis: 100%; }
+}
 </style>
 </head>
 <body>
-<main>
+<div class="page">
+<header>
 <h1>Tahoe Tracker</h1>
-<p>Live webcams and snow reports for Northstar, Heavenly and Kirkwood. Coming soon.</p>
-</main>
+<nav id="tabs" aria-label="Resorts"></nav>
+</header>
+<main id="main"></main>
+</div>
+<script type="module" src="app.js"></script>
 </body>
 </html>
