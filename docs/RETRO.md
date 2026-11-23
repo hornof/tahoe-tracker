@@ -82,3 +82,6 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 ### What didn't work (Claude)
 - **A stale menu path.** "Workers & Pages" had moved under Compute, and the Pages option sat behind a "Continue to Pages" link. Luke's corrected path is saved for next time.
 - **A long detour about sessions.** Claude kept recommending a fresh session with reasons that argued the opposite, and called its own suggestion a "rule". Luke chose to stay in this session.
+
+### Noted for later (Luke)
+- **The progress page needs a lot of work.** Luke understands every piece on it, but the layout is hard to read and he can't get useful information from it. It comes from apb's `scripts/progress-page.py`, so the redesign belongs to apb.
