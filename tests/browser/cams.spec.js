@@ -361,10 +361,15 @@ function expectLayout2(m, label) {
   expect(right(t[t.length - 1]) - t[0].x, `${label}: tile row no wider than the title bar`).toBeLessThanOrEqual(m.header.width + 0.5);
 }
 
+// A fresh load at each size. Going to the same "/#id" again is only a hash change, so the page would just
+// be resized; the numbers' fit (Decision 9 b) then runs at the browser's next frame, and measuring before
+// it caught them mid-resize (CI, PR #23). Two frames after the load, as a user would see it.
 async function viewAt(page, id, [w, h]) {
   await page.setViewportSize({ width: w, height: h });
+  await page.goto('about:blank');
   await page.goto(`/#${id}`);
   await page.locator('[data-stat]').first().waitFor();
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 }
 
 test('layout 2: the agreed sizes at 1440, scaled at 1000 and 1280, capped at the title bar at 1920', async ({ page }) => {
