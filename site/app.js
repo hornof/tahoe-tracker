@@ -88,18 +88,45 @@ function numbersContent(resort) {
       r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null);
   }
   const { report } = r;
+  const times = timesBox(resort, r);
   return [
     r.status === 'stale'
       ? el('p', { class: 'flag' }, el('strong', { text: 'Stale' }),
         `: our last fetch failed, so these numbers are from ${pacific(r.fetchedAt) || 'an earlier fetch'}.`)
       : null,
-    el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
-      el('dt', { text: s.label }),
-      el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
-    el('p', { class: 'muted updated', text: report.lastUpdatedText || 'The report gives no update time.' }),
-    el('p', { class: 'muted fetched', text: fetchedLine(r) }),
+    el('div', { class: 'stats-row' },
+      el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
+        el('dt', { text: s.label }),
+        el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
+      infoButton(resort, times)),
+    times,
     forecast(r.forecast),
   ];
+}
+
+// The report's update time and our fetch time, for troubleshooting: hidden behind the "i" button
+// beside the numbers while the data is fine (card #22, item 4). "Stale" and "Not available" still
+// show as words above.
+function timesBox(resort, r) {
+  return el('div', { class: 'times', id: `times-${resort.id}`, hidden: true },
+    el('p', { class: 'muted updated', text: r.report.lastUpdatedText || 'The report gives no update time.' }),
+    el('p', { class: 'muted fetched', text: fetchedLine(r) }));
+}
+
+function infoButton(resort, times) {
+  const b = el('button', {
+    type: 'button',
+    class: 'info',
+    'aria-label': `${resort.name}: update and fetch times`,
+    'aria-expanded': 'false',
+    'aria-controls': times.id,
+    text: 'i',
+  });
+  b.addEventListener('click', () => {
+    times.hidden = !times.hidden;
+    b.setAttribute('aria-expanded', String(!times.hidden));
+  });
+  return b;
 }
 
 function forecast(days) {
@@ -144,7 +171,7 @@ function fillNumbers(list) {
 
 function home(rs) {
   return [
-    el('p', { class: 'intro', text: 'One live cam per resort. Click a cam to play or pause it; "See all" shows that resort\'s cams.' }),
+    el('p', { class: 'intro', text: "Live webcams embedded from the resorts' camera feeds, plus snow numbers and forecasts a worker pulls from each resort's report every hour." }),
     el('div', { class: 'home-grid' }, rs.map((r) => {
       const cam = r.cams[0];
       return el('section', { class: 'resort card', 'data-resort': r.id },
@@ -164,22 +191,24 @@ function home(rs) {
 function resortView(r, bigId) {
   const big = r.cams.find((c) => c.id === bigId);
   const rest = r.cams.filter((c) => c !== big);
+  // A grid (card #22, mockup "Resort view, tightened"): on a laptop the big cam and the numbers panel
+  // side by side, the tiles in a row below, both rows on the same left and right edges. On a phone:
+  // big cam, tiles, then numbers.
   return el('div', { class: 'resort-view' },
-    el('div', { class: 'cams' },
-      el('figure', { class: 'big' },
-        spot(big, r),
-        el('figcaption', {}, el('span', { class: 'cam-name big-name', tabindex: '-1', text: `${r.name} · ${big.name}` }))),
-      el('div', { class: 'tiles', 'data-count': String(rest.length) }, rest.map((c) =>
-        el('figure', { class: 'tile' },
-          spot(c, r),
-          el('figcaption', {},
-            el('span', { class: 'cam-name', text: c.name }),
-            el('button', {
-              type: 'button',
-              class: 'pill',
-              'aria-label': `Make ${c.name} the big cam`,
-              onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
-            }, 'Make big')))))),
+    el('figure', { class: 'big' },
+      spot(big, r),
+      el('figcaption', {}, el('span', { class: 'cam-name big-name', tabindex: '-1', text: `${r.name} · ${big.name}` }))),
+    el('div', { class: 'tiles', 'data-count': String(rest.length) }, rest.map((c) =>
+      el('figure', { class: 'tile' },
+        spot(c, r),
+        el('figcaption', {},
+          el('span', { class: 'cam-name', text: c.name }),
+          el('button', {
+            type: 'button',
+            class: 'pill',
+            'aria-label': `Make ${c.name} the big cam`,
+            onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
+          }, 'Make big'))))),
     el('aside', { class: 'resort-info card' },
       el('h2', { text: r.name }),
       numbers(r),

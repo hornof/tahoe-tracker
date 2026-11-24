@@ -39,6 +39,20 @@ test('home shows three live players, one per resort, each with its name', async 
   await expect(page.locator('iframe')).toHaveCount(3);
 });
 
+// Card #22, items 1 and 2: the intro as agreed, and the three home cams that autoplay.
+test('home intro text and the three home cams are the agreed ones', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.intro')).toHaveText(
+    "Live webcams embedded from the resorts' camera feeds, plus snow numbers and forecasts a worker pulls from each resort's report every hour.");
+  const want = { northstar: 'Mid Mountain', heavenly: 'Top of Dipper', kirkwood: 'Cornice' };
+  for (const [id, name] of Object.entries(want)) {
+    await expect(page.locator(`section.resort[data-resort="${id}"] .cam-bar .cam-name`)).toHaveText(name);
+  }
+  // And Mid Mountain is the big cam when Northstar's view opens.
+  await page.goto('/#northstar');
+  await expect(page.locator('.big .big-name')).toHaveText('Northstar · Mid Mountain');
+});
+
 test('the players are clickable: nothing sits on top of any of them', async ({ page }) => {
   const check = async () => {
     const frames = page.locator('iframe');
@@ -230,27 +244,36 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       const frames = await boxes(page.locator('iframe'));
       expectNoOverlap(frames);
       for (const f of frames) expect(f.width).toBeGreaterThan(narrow ? 120 : 200);
-      const [cams] = await boxes(page.locator('.cams'));
+      const [big] = await boxes(page.locator('.big'));
+      const [spot] = await boxes(page.locator('.big .spot'));
       const [info] = await boxes(page.locator('.resort-info'));
+      const [tiles] = await boxes(page.locator('.tiles'));
+      const right = (b) => b.x + b.width;
+      const bottom = (b) => b.y + b.height;
+      // The big cam keeps its 16:9 shape.
+      expect(Math.abs(spot.width / spot.height - 16 / 9)).toBeLessThan(0.02);
+      // Card #22, item 5: the big cam and the tile row share a left edge, in every width.
+      expect(Math.abs(spot.x - tiles.x), 'big cam left = tile row left').toBeLessThan(1);
       if (narrow) {
-        // Stacked: the big cam spans the column, and the numbers panel sits below the cams.
-        const [big] = await boxes(page.locator('.big'));
+        // Stacked: the big cam spans the column, the tiles below it, the numbers panel below the tiles.
         expect(big.width).toBeGreaterThan(page.viewportSize().width - 40);
-        expect(info.y).toBeGreaterThanOrEqual(cams.y + cams.height);
+        expect(Math.abs(right(spot) - right(tiles)), 'big cam right = tile row right').toBeLessThan(1);
+        expect(tiles.y).toBeGreaterThanOrEqual(bottom(big));
+        expect(info.y).toBeGreaterThanOrEqual(bottom(tiles));
       } else {
-        // Side by side on a laptop: the numbers panel is to the right of the cams.
-        expect(info.x).toBeGreaterThanOrEqual(cams.x + cams.width);
-        // Luke, Decision 8 (b): the big cam is capped by height, so the whole tile row (tiles, names
-        // and "Make big" buttons) fits in the window without scrolling.
+        // Laptop (mockup "Resort view, tightened"): the numbers panel sits right beside the big cam,
+        // tops aligned, and ends at the tile row's right edge; the tiles are a row below both.
+        expect(info.x, 'panel right of the big cam').toBeGreaterThanOrEqual(right(spot));
+        expect(info.x - right(spot), 'panel right beside the big cam').toBeLessThanOrEqual(24);
+        expect(Math.abs(info.y - spot.y), 'panel top = big cam top').toBeLessThan(1);
+        expect(Math.abs(right(info) - right(tiles)), 'panel right = tile row right').toBeLessThan(1);
+        expect(tiles.y).toBeGreaterThanOrEqual(Math.max(bottom(big), bottom(info)));
+        // Luke, Decision 8 (b), kept from card #15: the whole tile row (tiles, names and "Make big"
+        // buttons) fits in the window without scrolling.
         expect(await page.evaluate(() => window.scrollY)).toBe(0);
-        const [tiles] = await boxes(page.locator('.tiles'));
         const h = page.viewportSize().height;
-        expect(tiles.y + tiles.height, 'tile row bottom inside the window').toBeLessThanOrEqual(h);
-        for (const b of await boxes(page.locator('.tile button'))) expect(b.y + b.height).toBeLessThanOrEqual(h);
-        // The big cam keeps its 16:9 shape and is centred over the tiles.
-        const [spot] = await boxes(page.locator('.big .spot'));
-        expect(Math.abs(spot.width / spot.height - 16 / 9)).toBeLessThan(0.02);
-        expect(Math.abs((spot.x + spot.width / 2) - (cams.x + cams.width / 2))).toBeLessThan(2);
+        expect(bottom(tiles), 'tile row bottom inside the window').toBeLessThanOrEqual(h);
+        for (const b of await boxes(page.locator('.tile button'))) expect(bottom(b)).toBeLessThanOrEqual(h);
       }
     }
   });

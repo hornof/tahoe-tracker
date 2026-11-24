@@ -63,7 +63,17 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Snow numbers (card #16): big numbers, small labels, muted times (PRD, Look). */
 .numbers { border-top: 1px solid var(--soft-line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .numbers > p { margin: 0; }
-.stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px 10px; }
+.stats-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.stats { flex: 1 1 auto; min-width: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)); gap: 6px 8px; }
+/* The "i" button beside the numbers: the update and fetch times, for troubleshooting (card #22, item 4). */
+.info {
+  flex: none; width: 32px; height: 32px; border-radius: 999px; cursor: pointer; padding: 0;
+  border: 1px solid var(--tab-line); background: var(--card); color: var(--muted); font: 600 14px Inter, system-ui, sans-serif;
+}
+.info:hover, .info[aria-expanded="true"] { border-color: var(--fg); color: var(--fg); }
+.times { display: flex; flex-direction: column; gap: 2px; }
+.times[hidden] { display: none; }
+.times p { margin: 0; }
 .stat { min-width: 0; }
 .stat dt { font-size: 12px; color: var(--muted); }
 .stat dd { margin: 0; font: 700 22px/1.15 var(--head); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -83,27 +93,42 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .card-head, .cam-bar, figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .card-head { align-items: baseline; }
 
-/* Resort view: one big cam, the rest as tiles, the numbers beside (below on a phone). */
-.resort-view { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
-.cams { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+/* Resort view (card #22, mockup "Resort view, tightened"): the big cam and the numbers panel side by
+   side, the other cams in a row below; both rows share the same left and right edges. A phone stacks
+   them: big cam, tiles, numbers. */
+.resort-view {
+  display: grid; gap: 18px; align-items: start;
+  grid-template-columns: minmax(0, 1fr); grid-template-areas: "big" "tiles" "info";
+}
+.big { grid-area: big; }
+.tiles { grid-area: tiles; }
+.resort-info { grid-area: info; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big .spot { border-radius: 10px; }
-/* Laptop: cap the big cam by height so the tile row (names and "Make big" too) fits on screen
-   (Luke, Decision 8 b). 400px is the header, the caption and the tile row; it keeps 16:9 and is centred. */
+/* Laptop: the big cam's width is capped by the window's height so the tile row (names and "Make big"
+   too) fits on screen (Luke, Decision 8 b); the numbers panel takes the rest of the width, at least 360px
+   so the five numbers stay in one row beside the "i" button.
+   The tile row's height follows the page width: three 16:9 tiles across (12px gaps) plus their caption.
+   The rest is the page's top padding, the header, the gaps and the big cam's caption. */
 @media (min-width: 761px) {
-  .big { width: min(100%, max(360px, calc((100vh - 400px) * 16 / 9))); align-self: center; }
+  .resort-view {
+    --content: calc(min(1376px, 100vw) - 64px);
+    --tile-row: calc((var(--content) - 24px) * 9 / 48 + 48px);
+    --big-h: calc(100vh - 24px - 48px - 18px - 40px - 18px - var(--tile-row) - 12px);
+    grid-template-columns: minmax(0, max(360px, calc(var(--big-h) * 16 / 9))) minmax(360px, 1fr);
+    grid-template-areas: "big info" "tiles tiles";
+  }
 }
 .big-name { font-size: 20px; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tile .cam-name { font-size: 14px; }
-.resort-info { flex: 1 1 260px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.resort-info { min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .resort-info h2 { font-size: 24px; }
 
 @media (max-width: 760px) {
   .page { padding: 16px 16px 32px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cams { flex-basis: 100%; }
 }
 </style>
 </head>
