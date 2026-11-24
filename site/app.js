@@ -177,7 +177,50 @@ function fillNumbers(list) {
     const r = byId.get(box.dataset.numbers);
     if (r) box.replaceChildren(...numbersContent(r, 'panel' in box.dataset).filter(Boolean));
   }
+  watchPanelNumbers();
 }
+
+// The resort panel's five numbers sit in one row (layout 2). Where a window is too narrow for them
+// (three-digit numbers below about 1220px wide), the numbers' text gets smaller, just enough for all
+// five to fit, in half-pixel steps; the labels and the "in" keep their size (PR #23, Decision 9 b).
+// Measured, not computed, so it holds for whichever font the browser ends up with. Re-checked whenever
+// the row changes width (window resize, a scrollbar) and when the web fonts arrive.
+const MIN_NUMBER_PX = 10;
+function fitNumbers(dl) {
+  const dds = [...dl.querySelectorAll('dd')];
+  if (dds.length === 0) return;
+  for (const d of dds) d.style.fontSize = '';
+  // To the sub-pixel: scrollWidth rounds, which would let a number run half a pixel past its column.
+  const range = document.createRange();
+  const over = () => dds.some((d) => {
+    range.selectNodeContents(d);
+    return range.getBoundingClientRect().right > d.getBoundingClientRect().right;
+  });
+  let size = parseFloat(getComputedStyle(dds[0]).fontSize);
+  while (over() && size > MIN_NUMBER_PX) {
+    size -= 0.5;
+    for (const d of dds) d.style.fontSize = `${size}px`;
+  }
+}
+
+const numberRows = new ResizeObserver((entries) => {
+  for (const { target, contentRect } of entries) {
+    // Only a change of width can change the fit; the fit itself may change the height.
+    if (target.dataset.fitWidth === String(contentRect.width)) continue;
+    target.dataset.fitWidth = String(contentRect.width);
+    fitNumbers(target);
+  }
+});
+
+function watchPanelNumbers() {
+  for (const dl of document.querySelectorAll('.numbers[data-panel] dl.stats')) {
+    fitNumbers(dl);
+    numberRows.observe(dl);
+  }
+}
+document.fonts?.addEventListener?.('loadingdone', () => {
+  for (const dl of document.querySelectorAll('.numbers[data-panel] dl.stats')) fitNumbers(dl);
+});
 
 function home(rs) {
   return [
@@ -240,6 +283,7 @@ function render(list) {
   tabs(rs, state.view);
   if (state.view === 'home') main.replaceChildren(...home(rs));
   else main.replaceChildren(resortView(rs.find((r) => r.id === state.view), state.big));
+  watchPanelNumbers();
   // After "Make big": bring the new big cam into view and put keyboard focus on its name.
   if (showBig && state.view !== 'home') {
     const big = main.querySelector('.big');

@@ -451,3 +451,107 @@ test('below 1000px wide the resort view is the phone\'s stacked layout; from 100
     expectLayout2(await layout2(page), `${id} @1000`);
   }
 });
+
+// Decision 9 (b): layout 2 stays side by side from 1000px. Where five three-digit numbers would not fit
+// across the panel, only the numbers' text gets smaller, just enough; the labels and the "in" stay as
+// they are, and where the numbers fit (1440) nothing changes. Checked with the fonts of whatever machine
+// runs the test (CI's Linux fonts, a Mac's), since the oracle is the page's own measurements.
+const BIG = {
+  'Base 120, Season 288': { baseDepthInches: 120, seasonTotalInches: 288 },
+  'all five three-digit': { twentyFourHourInches: 108, fortyEightHourInches: 148, sevenDayInches: 188, baseDepthInches: 120, seasonTotalInches: 288 },
+};
+
+async function stubBig(page, values) {
+  const body = await snowBody();
+  for (const r of body.resorts) if (r.report) Object.assign(r.report, values);
+  await page.unrouteAll();
+  await stubBrownrice(page);
+  await stubSnow(page, { body });
+}
+
+// Each number in the resort panel: where its text (digits and "in") starts and ends, the column it
+// sits in, and the type sizes.
+async function panelNumbers(page) {
+  return page.locator('.resort-info [data-stat]').evaluateAll((els) => els.map((e) => {
+    const dd = e.querySelector('dd');
+    const range = document.createRange();
+    range.selectNodeContents(dd);
+    const text = range.getBoundingClientRect();
+    const cell = dd.getBoundingClientRect();
+    return {
+      label: e.querySelector('dt').textContent,
+      value: dd.textContent,
+      left: text.left, right: text.right, cellLeft: cell.left, cellRight: cell.right,
+      cut: dd.scrollWidth > dd.clientWidth,
+      dd: parseFloat(getComputedStyle(dd).fontSize),
+      dt: parseFloat(getComputedStyle(e.querySelector('dt')).fontSize),
+      unit: parseFloat(getComputedStyle(dd.querySelector('.unit')).fontSize),
+    };
+  }));
+}
+
+function expectFit(ns, label) {
+  expect(ns, label).toHaveLength(5);
+  for (const n of ns) {
+    expect(n.cut, `${label}: ${n.label} ${n.value} cut off`).toBe(false);
+    expect(n.right, `${label}: ${n.label} ${n.value} inside its column`).toBeLessThanOrEqual(n.cellRight + 0.5);
+  }
+  for (let i = 1; i < ns.length; i++) {
+    expect(ns[i].left, `${label}: ${ns[i - 1].value} does not touch ${ns[i].value}`).toBeGreaterThan(ns[i - 1].right);
+  }
+}
+
+test('layout 2: five three-digit numbers fit side by side from 1000 to 1440; only their text shrinks, and only where needed', async ({ page }) => {
+  // The oracle for "as now": the home page's numbers, which this change leaves alone.
+  await stubBig(page, BIG['all five three-digit']);
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await page.goto('/');
+  await page.locator('[data-stat]').first().waitFor();
+  const home = await page.locator('section.resort [data-stat]').first().evaluate((e) => ({
+    dd: parseFloat(getComputedStyle(e.querySelector('dd')).fontSize),
+    dt: parseFloat(getComputedStyle(e.querySelector('dt')).fontSize),
+    unit: parseFloat(getComputedStyle(e.querySelector('.unit')).fontSize),
+  }));
+  for (const [name, values] of Object.entries(BIG)) {
+    await stubBig(page, values);
+    for (const w of [1000, 1100, 1280, 1440]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.goto('about:blank'); // a real load each time, not just a hash change
+      await page.goto('/#northstar');
+      await page.locator('.resort-info [data-stat]').first().waitFor();
+      const label = `${name} @${w}`;
+      const ns = await panelNumbers(page);
+      expect(ns.map((n) => n.value).filter((v) => /^\d{3} in$/.test(v)).length, `${label}: the three-digit values are on the page`)
+        .toBe(Object.keys(values).length);
+      expectFit(ns, label);
+      // The labels and the "in" never change; the five numbers share one size, never bigger than now.
+      for (const n of ns) {
+        expect(n.dt, `${label}: label size`).toBe(home.dt);
+        expect(n.unit, `${label}: "in" size`).toBe(home.unit);
+        expect(n.dd, `${label}: the five numbers the same size`).toBe(ns[0].dd);
+      }
+      expect(ns[0].dd, `${label}: never bigger than now`).toBeLessThanOrEqual(home.dd);
+      if (w === 1440) expect(ns[0].dd, `${label}: unchanged at 1440`).toBe(home.dd);
+      // Just enough: when the text is smaller, the widest number nearly fills its column.
+      if (ns[0].dd < home.dd) {
+        const room = Math.min(...ns.map((n) => (n.cellRight - n.cellLeft) - (n.right - n.left)));
+        expect(room, `${label}: shrunk no more than needed`).toBeLessThan(3);
+      }
+    }
+  }
+});
+
+test('layout 2: resizing the window shrinks the numbers and grows them back', async ({ page }) => {
+  await stubBig(page, BIG['all five three-digit']);
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await page.goto('/#heavenly');
+  await page.locator('.resort-info [data-stat]').first().waitFor();
+  const before = (await panelNumbers(page))[0].dd;
+  // Narrower, then wider again, in the same page: no reload.
+  await page.setViewportSize({ width: 1000, height: 700 });
+  await expect.poll(async () => (await panelNumbers(page))[0].dd).toBeLessThan(before);
+  expectFit(await panelNumbers(page), 'shrunk @1000');
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await expect.poll(async () => (await panelNumbers(page))[0].dd).toBe(before);
+  expectFit(await panelNumbers(page), 'back @1440');
+});

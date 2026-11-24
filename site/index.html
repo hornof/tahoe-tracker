@@ -121,7 +121,9 @@ figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 
      .page max-width of 1376px less its 32px padding each side.
    - The panel's spare height goes into the forecast rows. When its content is taller than the cam
      (a narrow window, a Stale warning, the times open), the panel keeps the cam's height and scrolls
-     (Decision 6). The Stale warning is first under the name row, so it never scrolls out of sight. */
+     (Decision 6). The Stale warning is first under the name row, so it never scrolls out of sight.
+   - Where five three-digit numbers would not fit across the panel (below about 1220px wide), app.js
+     makes the numbers' text smaller, just enough; labels and "in" keep their size (Decision 9 b). */
 body { container-type: inline-size; }
 @media (min-width: 1000px) {
   .resort-view {
