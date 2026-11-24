@@ -63,7 +63,17 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 /* Snow numbers (card #16): big numbers, small labels, muted times (PRD, Look). */
 .numbers { border-top: 1px solid var(--soft-line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .numbers > p { margin: 0; }
-.stats { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 6px 10px; }
+.stats-row { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.stats { flex: 1 1 auto; min-width: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(48px, 1fr)); gap: 6px 8px; }
+/* The "i" button beside the numbers: the update and fetch times, for troubleshooting (card #22, item 4). */
+.info {
+  flex: none; width: 32px; height: 32px; border-radius: 999px; cursor: pointer; padding: 0;
+  border: 1px solid var(--tab-line); background: var(--card); color: var(--muted); font: 600 14px Inter, system-ui, sans-serif;
+}
+.info:hover, .info[aria-expanded="true"] { border-color: var(--fg); color: var(--fg); }
+.times { display: flex; flex-direction: column; gap: 2px; }
+.times[hidden] { display: none; }
+.times p { margin: 0; }
 .stat { min-width: 0; }
 .stat dt { font-size: 12px; color: var(--muted); }
 .stat dd { margin: 0; font: 700 22px/1.15 var(--head); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -83,27 +93,64 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .card-head, .cam-bar, figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .card-head { align-items: baseline; }
 
-/* Resort view: one big cam, the rest as tiles, the numbers beside (below on a phone). */
-.resort-view { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
-.cams { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+/* Resort view (card #22, layout 2, mockup "Resort view sizes"): the big cam with the numbers panel to
+   its right, the other cams in a row below. A phone stacks them: big cam, tiles, numbers. */
+.resort-view {
+  display: grid; gap: 18px; align-items: start;
+  grid-template-columns: minmax(0, 1fr); grid-template-areas: "big" "tiles" "info";
+}
+.big { grid-area: big; }
+.tiles { grid-area: tiles; }
+.resort-info { grid-area: info; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big .spot { border-radius: 10px; }
-/* Laptop: cap the big cam by height so the tile row (names and "Make big" too) fits on screen
-   (Luke, Decision 8 b). 400px is the header, the caption and the tile row; it keeps 16:9 and is centred. */
-@media (min-width: 761px) {
-  .big { width: min(100%, max(360px, calc((100vh - 400px) * 16 / 9))); align-self: center; }
-}
+/* The panel's heading row: the resort's name with the "i" button beside it. */
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.numbers[data-panel] { border-top: 0; padding-top: 0; }
+.numbers[data-panel] .panel-head { border-bottom: 1px solid var(--soft-line); padding-bottom: 10px; }
 .big-name { font-size: 20px; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tile .cam-name { font-size: 14px; }
-.resort-info { flex: 1 1 260px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.resort-info { min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .resort-info h2 { font-size: 24px; }
-
+/* Layout 2, from 1000px wide (PR #23, Decision 7), as agreed on a 1440px-wide window: big cam 720 x 405,
+   the numbers panel 400 wide and 20px to its right, exactly as tall as the cam, tops aligned, the five
+   numbers in one row; the other cams 370 wide, 14px apart. Both rows are centered on the page.
+   - Every size scales with the window (Decision 5 a): --u is 1px at 1440 wide, 8/9px at 1280.
+   - It stops growing once the top row (1140u) is as wide as the title bar (Decision 8): 1312px, the
+     .page max-width of 1376px less its 32px padding each side.
+   - The panel's spare height goes into the forecast rows. When its content is taller than the cam
+     (a narrow window, a Stale warning, the times open), the panel keeps the cam's height and scrolls
+     (Decision 6). The Stale warning is first under the name row, so it never scrolls out of sight.
+   - Where five three-digit numbers would not fit across the panel (below about 1220px wide), app.js
+     makes the numbers' text smaller, just enough; labels and "in" keep their size (Decision 9 b). */
+body { container-type: inline-size; }
+@media (min-width: 1000px) {
+  .resort-view {
+    --u: min(100cqw / 1440, 1312px / 1140);
+    gap: calc(16 * var(--u)) calc(20 * var(--u));
+    grid-template-columns: calc(720 * var(--u)) calc(400 * var(--u));
+    grid-template-areas: "big info" "tiles tiles";
+    justify-content: center;
+  }
+  .resort-info { height: calc(405 * var(--u)); overflow-y: auto; }
+  .resort-info .numbers, .resort-info .forecast { flex: 1 0 auto; }
+  /* A set height marks the header rows as fixed, so the table's spare height goes to the day rows. */
+  .resort-info .forecast thead tr { height: 1px; }
+  /* Every day row then has a line above and below it, so all five start out, and stay, the same height. */
+  .resort-info .forecast { border-bottom: 1px solid transparent; }
+  .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(14 * var(--u)); }
+  .tile { width: calc(370 * var(--u)); }
+  .numbers[data-panel] .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+/* Below 1000px the resort view is the phone's stacked layout (Decision 7): big cam, tiles two to a row,
+   numbers. */
+@media (max-width: 999px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 760px) {
   .page { padding: 16px 16px 32px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); }
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cams { flex-basis: 100%; }
 }
 </style>
 </head>

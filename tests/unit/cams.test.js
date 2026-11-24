@@ -35,7 +35,7 @@ test('every cam has a name, and names and ids are unique', () => {
 test('resorts come in order with 4, 4 and 2 cams, and the home cam first', () => {
   const rs = resorts(cams);
   assert.deepEqual(rs.map((r) => [r.id, r.cams.length]), [['northstar', 4], ['heavenly', 4], ['kirkwood', 2]]);
-  assert.deepEqual(rs.map((r) => r.cams[0].id), ['northstarvillage', 'heavenlydipper', 'kirkwoodcornice']);
+  assert.deepEqual(rs.map((r) => r.cams[0].id), ['northstarmidmountain', 'heavenlydipper', 'kirkwoodcornice']);
   for (const r of rs) {
     assert.ok(r.name);
     assert.match(r.camsPage, /^https:\/\/www\.[a-z]+\.com\/the-mountain\/mountain-conditions\/mountain-cams\.aspx$/);

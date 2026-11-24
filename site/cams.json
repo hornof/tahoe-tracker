@@ -5,10 +5,10 @@
     { "id": "kirkwood", "name": "Kirkwood", "camsPage": "https://www.kirkwood.com/the-mountain/mountain-conditions/mountain-cams.aspx" }
   ],
   "cams": [
-    { "resort": "northstar", "name": "Village", "id": "northstarvillage" },
-    { "resort": "northstar", "name": "Snow Stake", "id": "northstarsnowstake" },
     { "resort": "northstar", "name": "Mid Mountain", "id": "northstarmidmountain" },
+    { "resort": "northstar", "name": "Snow Stake", "id": "northstarsnowstake" },
     { "resort": "northstar", "name": "Mt. Pluto Summit", "id": "northstarspluto" },
+    { "resort": "northstar", "name": "Village", "id": "northstarvillage" },
     { "resort": "heavenly", "name": "Top of Dipper", "id": "heavenlydipper" },
     { "resort": "heavenly", "name": "Mid Station", "id": "heavenlymidstation" },
     { "resort": "heavenly", "name": "Top of Tram", "id": "heavenlytram" },

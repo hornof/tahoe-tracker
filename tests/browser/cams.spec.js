@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { stubBrownrice } from './stub.js';
-import { stubSnow } from './snow-stub.js';
+import { stubSnow, snowBody } from './snow-stub.js';
 
 // The oracle is site/cams.json itself: every check below is about the page matching the list.
 const list = JSON.parse(readFileSync(new URL('../../site/cams.json', import.meta.url), 'utf8'));
@@ -37,6 +37,20 @@ test('home shows three live players, one per resort, each with its name', async 
     await expect(s.locator('iframe')).toHaveAttribute('src', EMBED(r.cams[0].id));
   }
   await expect(page.locator('iframe')).toHaveCount(3);
+});
+
+// Card #22, items 1 and 2: the intro as agreed, and the three home cams that autoplay.
+test('home intro text and the three home cams are the agreed ones', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.intro')).toHaveText(
+    "Live webcams embedded from the resorts' camera feeds, plus snow numbers and forecasts a worker pulls from each resort's report every hour.");
+  const want = { northstar: 'Mid Mountain', heavenly: 'Top of Dipper', kirkwood: 'Cornice' };
+  for (const [id, name] of Object.entries(want)) {
+    await expect(page.locator(`section.resort[data-resort="${id}"] .cam-bar .cam-name`)).toHaveText(name);
+  }
+  // And Mid Mountain is the big cam when Northstar's view opens.
+  await page.goto('/#northstar');
+  await expect(page.locator('.big .big-name')).toHaveText('Northstar · Mid Mountain');
 });
 
 test('the players are clickable: nothing sits on top of any of them', async ({ page }) => {
@@ -230,28 +244,319 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       const frames = await boxes(page.locator('iframe'));
       expectNoOverlap(frames);
       for (const f of frames) expect(f.width).toBeGreaterThan(narrow ? 120 : 200);
-      const [cams] = await boxes(page.locator('.cams'));
+      const [big] = await boxes(page.locator('.big'));
+      const [spot] = await boxes(page.locator('.big .spot'));
       const [info] = await boxes(page.locator('.resort-info'));
+      const [tiles] = await boxes(page.locator('.tiles'));
+      const right = (b) => b.x + b.width;
+      const bottom = (b) => b.y + b.height;
+      // Every cam, big and tiles, keeps the 16:9 shape.
+      for (const s of await boxes(page.locator('.spot'))) expect(Math.abs(s.width / s.height - 16 / 9)).toBeLessThan(0.02);
       if (narrow) {
-        // Stacked: the big cam spans the column, and the numbers panel sits below the cams.
-        const [big] = await boxes(page.locator('.big'));
+        // Phone, unchanged by layout 2: stacked. The big cam spans the column with the tile row on the
+        // same left and right edges below it (card #22, item 5), the numbers panel below the tiles.
         expect(big.width).toBeGreaterThan(page.viewportSize().width - 40);
-        expect(info.y).toBeGreaterThanOrEqual(cams.y + cams.height);
+        expect(Math.abs(spot.x - tiles.x), 'big cam left = tile row left').toBeLessThan(1);
+        expect(Math.abs(right(spot) - right(tiles)), 'big cam right = tile row right').toBeLessThan(1);
+        expect(tiles.y).toBeGreaterThanOrEqual(bottom(big));
+        expect(info.y).toBeGreaterThanOrEqual(bottom(tiles));
       } else {
-        // Side by side on a laptop: the numbers panel is to the right of the cams.
-        expect(info.x).toBeGreaterThanOrEqual(cams.x + cams.width);
-        // Luke, Decision 8 (b): the big cam is capped by height, so the whole tile row (tiles, names
-        // and "Make big" buttons) fits in the window without scrolling.
-        expect(await page.evaluate(() => window.scrollY)).toBe(0);
-        const [tiles] = await boxes(page.locator('.tiles'));
-        const h = page.viewportSize().height;
-        expect(tiles.y + tiles.height, 'tile row bottom inside the window').toBeLessThanOrEqual(h);
-        for (const b of await boxes(page.locator('.tile button'))) expect(b.y + b.height).toBeLessThanOrEqual(h);
-        // The big cam keeps its 16:9 shape and is centred over the tiles.
-        const [spot] = await boxes(page.locator('.big .spot'));
-        expect(Math.abs(spot.width / spot.height - 16 / 9)).toBeLessThan(0.02);
-        expect(Math.abs((spot.x + spot.width / 2) - (cams.x + cams.width / 2))).toBeLessThan(2);
+        // Laptop: layout 2 (its sizes are checked in "layout 2" below). The panel is right of the big
+        // cam, the tiles a row below both.
+        expect(info.x, 'panel right of the big cam').toBeGreaterThanOrEqual(right(spot));
+        expect(tiles.y).toBeGreaterThanOrEqual(Math.max(bottom(big), bottom(info)));
       }
     }
   });
 }
+
+
+// Layout 2 (card #22, mockup "Resort view sizes"; it replaces Decision 4's 360px panel). Agreed on a
+// 1440 x 785 window: big cam 720 x 405, the panel 20px to its right, 400 wide and exactly as tall as the
+// cam with tops aligned, the five numbers in one row, the spare height in the forecast rows; the other
+// cams 370 wide, 14px apart; both rows centered on the page. PR #23 decisions:
+// - 5 a: every size scales with the window, s = window width / 1440;
+// - 6: the panel stays the cam's height; content that doesn't fit scrolls inside it, and a Stale warning
+//   sits at the top, under the name and "i" row, so it is never the part scrolled off;
+// - 7: layout 2 from 1000px wide; below that the phone's stacked layout;
+// - 8: it stops growing once the top row is as wide as the title bar (the page's content width), so
+//   s = min(window width / 1440, title bar width / 1140).
+const AGREED = { cam: 720, gap: 20, panel: 400, tile: 370, tileGap: 14 };
+const ROW = AGREED.cam + AGREED.gap + AGREED.panel; // 1140
+
+async function layout2(page) {
+  return page.evaluate(() => {
+    const box = (e) => { const b = e.getBoundingClientRect(); return { x: b.left, y: b.top, width: b.width, height: b.height }; };
+    const q = (s) => (document.querySelector(s) ? box(document.querySelector(s)) : null);
+    const all = (s) => [...document.querySelectorAll(s)].map(box);
+    const info = document.querySelector('.resort-info');
+    const style = getComputedStyle(info);
+    info.scrollTop = 0;
+    // The lowest bottom edge of anything inside the panel, and the panel's inner bottom edge.
+    const contentBottom = Math.max(...[...info.querySelectorAll('*')].map((e) => e.getBoundingClientRect().bottom));
+    const innerBottom = info.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) - parseFloat(style.borderBottomWidth);
+    return {
+      width: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      header: q('header'),
+      spot: q('.big .spot'),
+      info: q('.resort-info'),
+      head: q('.resort-info .panel-head'),
+      flag: q('.resort-info .flag'),
+      overflowY: style.overflowY,
+      scrollHeight: info.scrollHeight,
+      clientHeight: info.clientHeight,
+      // Where the panel's visible area ends: its bottom edge less its bottom border.
+      visibleBottom: info.getBoundingClientRect().bottom - parseFloat(style.borderBottomWidth),
+      tiles: all('.tile .spot'),
+      stats: all('.resort-info [data-stat]'),
+      statsCut: [...document.querySelectorAll('.resort-info [data-stat] dd, .resort-info dl.stats')].filter((e) => e.scrollWidth > e.clientWidth + 1).length,
+      rows: all('.resort-info tbody tr'),
+      contentBottom,
+      innerBottom,
+    };
+  });
+}
+
+const scaleOf = (m) => Math.min(m.width / 1440, m.header.width / ROW);
+
+function expectLayout2(m, label) {
+  const s = scaleOf(m);
+  const near = (got, want, what) => expect(Math.abs(got - want), `${label}: ${what} (got ${got}, want ${want})`).toBeLessThan(1);
+  const right = (b) => b.x + b.width;
+  const mid = (a, b) => (a + b) / 2;
+  expect(m.scrollWidth, `${label}: no sideways scroll`).toBeLessThanOrEqual(m.width);
+  // Top row: big cam, gap, panel.
+  near(m.spot.width, AGREED.cam * s, 'big cam width');
+  near(m.spot.height, m.spot.width * 9 / 16, 'big cam 16:9');
+  near(m.info.x - right(m.spot), AGREED.gap * s, 'gap between cam and panel');
+  near(m.info.width, AGREED.panel * s, 'panel width');
+  near(m.info.height, m.spot.height, 'panel as tall as the big cam');
+  near(m.info.y, m.spot.y, 'panel top = big cam top');
+  near(mid(m.spot.x, right(m.info)), m.width / 2, 'top row centered');
+  near(mid(m.header.x, right(m.header)), m.width / 2, 'title bar centered (the oracle for the page centre)');
+  expect(right(m.info) - m.spot.x, `${label}: top row no wider than the title bar`).toBeLessThanOrEqual(m.header.width + 0.5);
+  // The five numbers in one row, none cut off.
+  expect(m.stats, `${label}: five numbers`).toHaveLength(5);
+  for (const st of m.stats) near(st.y, m.stats[0].y, 'numbers in one row');
+  for (let i = 1; i < m.stats.length; i++) expect(m.stats[i].x, `${label}: numbers left to right`).toBeGreaterThan(m.stats[i - 1].x);
+  expect(m.statsCut, `${label}: numbers cut off`).toBe(0);
+  // The forecast rows are all the same height. When the content fits, the spare height is in them: the
+  // content reaches the panel's bottom edge, with no gap below. When it doesn't fit, the panel scrolls.
+  expect(m.rows).toHaveLength(5);
+  for (const r of m.rows) near(r.height, m.rows[0].height, 'forecast rows the same height');
+  if (m.scrollHeight <= m.clientHeight + 1) near(m.contentBottom, m.innerBottom, 'panel content ends at the panel bottom');
+  else expect(m.overflowY, `${label}: panel scrolls`).toBe('auto');
+  // Tile row: below the top row, each 370 wide (16:9), 14 apart, centered, no wider than the title bar.
+  const t = m.tiles;
+  expect(t.length).toBeGreaterThan(0);
+  for (const x of t) {
+    near(x.width, AGREED.tile * s, 'tile width');
+    near(x.height, x.width * 9 / 16, 'tile 16:9');
+    near(x.y, t[0].y, 'tiles in one row');
+    expect(x.y, `${label}: tiles below the top row`).toBeGreaterThan(m.spot.y + m.spot.height);
+  }
+  for (let i = 1; i < t.length; i++) near(t[i].x - right(t[i - 1]), AGREED.tileGap * s, 'gap between tiles');
+  near(mid(t[0].x, right(t[t.length - 1])), m.width / 2, 'tile row centered');
+  expect(right(t[t.length - 1]) - t[0].x, `${label}: tile row no wider than the title bar`).toBeLessThanOrEqual(m.header.width + 0.5);
+}
+
+// A fresh load at each size. Going to the same "/#id" again is only a hash change, so the page would just
+// be resized; the numbers' fit (Decision 9 b) then runs at the browser's next frame, and measuring before
+// it caught them mid-resize (CI, PR #23). Two frames after the load, as a user would see it.
+async function viewAt(page, id, [w, h]) {
+  await page.setViewportSize({ width: w, height: h });
+  await page.goto('about:blank');
+  await page.goto(`/#${id}`);
+  await page.locator('[data-stat]').first().waitFor();
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+}
+
+test('layout 2: the agreed sizes at 1440, scaled at 1000 and 1280, capped at the title bar at 1920', async ({ page }) => {
+  for (const id of RESORTS.map((r) => r.id)) {
+    const seen = {};
+    for (const size of [[1440, 785], [1280, 800], [1000, 700], [1920, 1080]]) {
+      await viewAt(page, id, size);
+      const m = await layout2(page);
+      expectLayout2(m, `${id} @${size[0]}`);
+      seen[size[0]] = m;
+    }
+    // At exactly 1440 the sizes are the agreed ones, to the pixel.
+    expect(seen[1440].spot.width).toBeCloseTo(720, 0);
+    expect(seen[1440].spot.height).toBeCloseTo(405, 0);
+    expect(seen[1440].info.width).toBeCloseTo(400, 0);
+    expect(seen[1440].info.height).toBeCloseTo(405, 0);
+    // Below the cap, the same proportions: each size is the 1440 size times the window-width ratio.
+    for (const w of [1000, 1280]) {
+      const k = seen[w].width / seen[1440].width;
+      for (const part of ['spot', 'info']) {
+        for (const dim of ['width', 'height']) {
+          expect(Math.abs(seen[w][part][dim] - seen[1440][part][dim] * k), `${id}: ${part} ${dim} @${w} scales`).toBeLessThan(1);
+        }
+      }
+      expect(Math.abs(seen[w].tiles[0].width - seen[1440].tiles[0].width * k), `${id}: tile @${w} scales`).toBeLessThan(1);
+    }
+    // At 1920 it has stopped growing: the top row is exactly as wide as the title bar.
+    const m = seen[1920];
+    expect(Math.abs(m.info.x + m.info.width - m.spot.x - m.header.width), `${id}: top row = title bar width @1920`).toBeLessThan(1);
+    expect(m.width / 1440, 'the cap is reached before 1920').toBeGreaterThan(m.header.width / ROW);
+  }
+});
+
+test('layout 2: the panel keeps the cam\'s height and scrolls when its content is taller; Stale stays on top', async ({ page }) => {
+  await page.unrouteAll();
+  await stubBrownrice(page);
+  await stubSnow(page, { body: await snowBody({ heavenly: 'stale' }) });
+  const cases = [['heavenly', [1280, 800], false], ['heavenly', [1000, 700], false], ['northstar', [1280, 800], true], ['heavenly', [1440, 785], true]];
+  for (const [id, size, openTimes] of cases) {
+    const label = `${id}${openTimes ? ' with the times open' : ''} @${size[0]}`;
+    await viewAt(page, id, size);
+    if (openTimes) await page.locator('.resort-info .info').click();
+    const m = await layout2(page);
+    expectLayout2(m, label);
+    // Content taller than the panel: the panel stays the cam's height and scrolls up and down.
+    expect(m.scrollHeight, `${label}: content taller than the panel`).toBeGreaterThan(m.clientHeight + 1);
+    expect(Math.abs(m.info.height - m.spot.height), `${label}: panel = cam height`).toBeLessThan(1);
+    const info = page.locator('.resort-info');
+    const scrolled = await info.evaluate((e) => { e.scrollTop = e.scrollHeight; const t = e.scrollTop; e.scrollTop = 0; return t; });
+    expect(scrolled, `${label}: the panel scrolls`).toBeGreaterThan(0);
+    // The bottom of the content can be scrolled into view: the cams-page link becomes visible.
+    const link = info.getByRole('link', { name: /own cams page/ });
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toBeInViewport();
+    if (id === 'heavenly') {
+      // The Stale warning sits right under the name and "i" row, fully visible without scrolling.
+      const top = await layout2(page);
+      expect(top.flag, `${label}: a Stale warning`).not.toBeNull();
+      expect(top.flag.y, `${label}: Stale under the name row`).toBeGreaterThanOrEqual(top.head.y + top.head.height);
+      expect(top.flag.y, `${label}: Stale above the numbers`).toBeLessThan(top.stats[0].y);
+      expect(top.flag.y + top.flag.height, `${label}: Stale visible without scrolling`).toBeLessThanOrEqual(top.visibleBottom);
+    }
+  }
+});
+
+test('below 1000px wide the resort view is the phone\'s stacked layout; from 1000 it is layout 2', async ({ page }) => {
+  const right = (b) => b.x + b.width;
+  for (const id of RESORTS.map((r) => r.id)) {
+    // Just below: stacked as on a phone, the big cam across the column, tiles below it on the same edges,
+    // two to a row as on a phone, the numbers panel below the tiles at its natural height.
+    await viewAt(page, id, [999, 700]);
+    const n = await layout2(page);
+    expect(n.scrollWidth, `${id} @999: no sideways scroll`).toBeLessThanOrEqual(n.width);
+    const [tilesBox] = await boxes(page.locator('.tiles'));
+    expect(Math.abs(n.spot.x - tilesBox.x), `${id} @999: big cam left = tile row left`).toBeLessThan(1);
+    expect(Math.abs(right(n.spot) - right(tilesBox)), `${id} @999: big cam right = tile row right`).toBeLessThan(1);
+    expect(Math.abs(n.info.width - n.spot.width), `${id} @999: panel as wide as the big cam`).toBeLessThan(1);
+    for (const x of n.tiles) expect(x.y, `${id} @999: tiles below the big cam`).toBeGreaterThan(n.spot.y + n.spot.height);
+    expect(n.info.y, `${id} @999: panel below the tiles`).toBeGreaterThan(Math.max(...n.tiles.map((x) => x.y + x.height)));
+    expect(new Set(n.tiles.map((x) => Math.round(x.x))).size, `${id} @999: tiles two to a row`).toBe(Math.min(2, n.tiles.length));
+    expect(n.scrollHeight, `${id} @999: panel at its natural height, no scrolling`).toBeLessThanOrEqual(n.clientHeight + 1);
+    // Just above: layout 2.
+    await viewAt(page, id, [1000, 700]);
+    expectLayout2(await layout2(page), `${id} @1000`);
+  }
+});
+
+// Decision 9 (b): layout 2 stays side by side from 1000px. Where five three-digit numbers would not fit
+// across the panel, only the numbers' text gets smaller, just enough; the labels and the "in" stay as
+// they are, and where the numbers fit (1440) nothing changes. Checked with the fonts of whatever machine
+// runs the test (CI's Linux fonts, a Mac's), since the oracle is the page's own measurements.
+const BIG = {
+  'Base 120, Season 288': { baseDepthInches: 120, seasonTotalInches: 288 },
+  'all five three-digit': { twentyFourHourInches: 108, fortyEightHourInches: 148, sevenDayInches: 188, baseDepthInches: 120, seasonTotalInches: 288 },
+};
+
+async function stubBig(page, values) {
+  const body = await snowBody();
+  for (const r of body.resorts) if (r.report) Object.assign(r.report, values);
+  await page.unrouteAll();
+  await stubBrownrice(page);
+  await stubSnow(page, { body });
+}
+
+// Each number in the resort panel: where its text (digits and "in") starts and ends, the column it
+// sits in, and the type sizes.
+async function panelNumbers(page) {
+  return page.locator('.resort-info [data-stat]').evaluateAll((els) => els.map((e) => {
+    const dd = e.querySelector('dd');
+    const range = document.createRange();
+    range.selectNodeContents(dd);
+    const text = range.getBoundingClientRect();
+    const cell = dd.getBoundingClientRect();
+    return {
+      label: e.querySelector('dt').textContent,
+      value: dd.textContent,
+      left: text.left, right: text.right, cellLeft: cell.left, cellRight: cell.right,
+      cut: dd.scrollWidth > dd.clientWidth,
+      dd: parseFloat(getComputedStyle(dd).fontSize),
+      dt: parseFloat(getComputedStyle(e.querySelector('dt')).fontSize),
+      unit: parseFloat(getComputedStyle(dd.querySelector('.unit')).fontSize),
+    };
+  }));
+}
+
+function expectFit(ns, label) {
+  expect(ns, label).toHaveLength(5);
+  for (const n of ns) {
+    expect(n.cut, `${label}: ${n.label} ${n.value} cut off`).toBe(false);
+    expect(n.right, `${label}: ${n.label} ${n.value} inside its column`).toBeLessThanOrEqual(n.cellRight + 0.5);
+  }
+  for (let i = 1; i < ns.length; i++) {
+    expect(ns[i].left, `${label}: ${ns[i - 1].value} does not touch ${ns[i].value}`).toBeGreaterThan(ns[i - 1].right);
+  }
+}
+
+test('layout 2: five three-digit numbers fit side by side from 1000 to 1440; only their text shrinks, and only where needed', async ({ page }) => {
+  // The oracle for "as now": the home page's numbers, which this change leaves alone.
+  await stubBig(page, BIG['all five three-digit']);
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await page.goto('/');
+  await page.locator('[data-stat]').first().waitFor();
+  const home = await page.locator('section.resort [data-stat]').first().evaluate((e) => ({
+    dd: parseFloat(getComputedStyle(e.querySelector('dd')).fontSize),
+    dt: parseFloat(getComputedStyle(e.querySelector('dt')).fontSize),
+    unit: parseFloat(getComputedStyle(e.querySelector('.unit')).fontSize),
+  }));
+  for (const [name, values] of Object.entries(BIG)) {
+    await stubBig(page, values);
+    for (const w of [1000, 1100, 1280, 1440]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.goto('about:blank'); // a real load each time, not just a hash change
+      await page.goto('/#northstar');
+      await page.locator('.resort-info [data-stat]').first().waitFor();
+      const label = `${name} @${w}`;
+      const ns = await panelNumbers(page);
+      expect(ns.map((n) => n.value).filter((v) => /^\d{3} in$/.test(v)).length, `${label}: the three-digit values are on the page`)
+        .toBe(Object.keys(values).length);
+      expectFit(ns, label);
+      // The labels and the "in" never change; the five numbers share one size, never bigger than now.
+      for (const n of ns) {
+        expect(n.dt, `${label}: label size`).toBe(home.dt);
+        expect(n.unit, `${label}: "in" size`).toBe(home.unit);
+        expect(n.dd, `${label}: the five numbers the same size`).toBe(ns[0].dd);
+      }
+      expect(ns[0].dd, `${label}: never bigger than now`).toBeLessThanOrEqual(home.dd);
+      if (w === 1440) expect(ns[0].dd, `${label}: unchanged at 1440`).toBe(home.dd);
+      // Just enough: when the text is smaller, the widest number nearly fills its column.
+      if (ns[0].dd < home.dd) {
+        const room = Math.min(...ns.map((n) => (n.cellRight - n.cellLeft) - (n.right - n.left)));
+        expect(room, `${label}: shrunk no more than needed`).toBeLessThan(3);
+      }
+    }
+  }
+});
+
+test('layout 2: resizing the window shrinks the numbers and grows them back', async ({ page }) => {
+  await stubBig(page, BIG['all five three-digit']);
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await page.goto('/#heavenly');
+  await page.locator('.resort-info [data-stat]').first().waitFor();
+  const before = (await panelNumbers(page))[0].dd;
+  // Narrower, then wider again, in the same page: no reload.
+  await page.setViewportSize({ width: 1000, height: 700 });
+  await expect.poll(async () => (await panelNumbers(page))[0].dd).toBeLessThan(before);
+  expectFit(await panelNumbers(page), 'shrunk @1000');
+  await page.setViewportSize({ width: 1440, height: 785 });
+  await expect.poll(async () => (await panelNumbers(page))[0].dd).toBe(before);
+  expectFit(await panelNumbers(page), 'back @1440');
+});

@@ -5,7 +5,7 @@ The human's rulings on past reviews. The reviewer reads this file before every r
 ## How to write a review
 Rules that add to or override `agents/reviewer.md` in the apb plugin.
 
-(none yet)
+- An approved mockup is the spec. If a build would differ from it, even to keep an older rule, that's a Decision for Luke before building, never a judgment call (PR #23).
 
 ## Names
 The one name this project uses for each thing, everywhere: repo files, PR titles and descriptions, issues, the board and Claude artifacts.

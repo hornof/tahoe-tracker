@@ -66,6 +66,15 @@ Other things in the player script that matter:
 - It autoplays muted, and shows a live viewer count.
 - It loads Google Analytics (`G-ZMDJMNVFHZ`) inside the iframe.
 
+#### Autoplay is set per cam, by Brownrice (checked 2026-11-24, card #22)
+
+Why some cams play on arrival and others need a click on the play button: autoplay is a per-cam setting on Brownrice's side, `autostart` in each cam's player script. The player takes no override from the page that embeds it, so tahoe-tracker can't turn it on.
+
+- Autoplay on: Mid Mountain, Top of Dipper, Top of Tram, Cornice, Red Cliffs.
+- Autoplay off (needs a click): Village, Snow Stake, Pluto, Mid Station, East Peak.
+
+Since card #22 the home page shows Mid Mountain for Northstar (it showed Village), so all three home-page cams autoplay. The cams in the resort views stay as they are. The only workaround is our own video player on the raw stream (option C below), which is fragile and a grey area under the terms.
+
 Real-browser check: a test page served from `http://127.0.0.1:8765` (a foreign origin) in the Claude desktop browser pane loaded the Kirkwood Cornice player in an iframe and it played live ("LIVE", 89 viewers). The Hope Valley YouTube iframe loaded its player too.
 
 ### 4. Direct still images

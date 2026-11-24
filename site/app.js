@@ -64,8 +64,15 @@ function check(cam, resort) {
 // resort says "Loading"; if the request fails, each says "Not available".
 let snow = { state: 'loading' }; // { state: 'loading' } | { state: 'ok', byId } | { state: 'failed' }
 
-function numbers(resort) {
-  return el('div', { class: 'numbers', 'data-numbers': resort.id }, numbersContent(resort));
+// `panel`: the resort view's numbers panel (mockup "Resort view, tightened"), which starts with the
+// resort's name and puts the "i" button beside it. On the home page the button sits beside the numbers.
+function numbers(resort, { panel = false } = {}) {
+  return el('div', { class: 'numbers', 'data-numbers': resort.id, 'data-panel': panel ? '' : null },
+    numbersContent(resort, panel));
+}
+
+function panelHead(resort, button) {
+  return el('div', { class: 'panel-head' }, el('h2', { text: resort.name }), button);
 }
 
 function notAvailable(why, link) {
@@ -75,31 +82,61 @@ function notAvailable(why, link) {
   ];
 }
 
-function numbersContent(resort) {
-  if (snow.state === 'loading') return [el('p', { class: 'muted', text: 'Loading snow numbers…' })];
+function numbersContent(resort, panel = false) {
+  const head = panel ? panelHead(resort, null) : null;
+  if (snow.state === 'loading') return [head, el('p', { class: 'muted', text: 'Loading snow numbers…' })];
   // With no /api/snow answer there is no report link, so link to the resort's page from cams.json.
   if (snow.state === 'failed') {
-    return notAvailable("the snow numbers didn't load. Try reloading.",
-      { href: resort.camsPage, text: `See ${resort.name}'s own page` });
+    return [head, ...notAvailable("the snow numbers didn't load. Try reloading.",
+      { href: resort.camsPage, text: `See ${resort.name}'s own page` })];
   }
   const r = snow.byId.get(resort.id);
   if (!r || r.status === 'not-available' || !r.report) {
-    return notAvailable("we haven't been able to read this resort's snow report yet.",
-      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null);
+    return [head, ...notAvailable("we haven't been able to read this resort's snow report yet.",
+      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null)];
   }
   const { report } = r;
+  const times = timesBox(resort, r);
+  const button = infoButton(resort, times);
   return [
+    panel ? panelHead(resort, button) : null,
     r.status === 'stale'
       ? el('p', { class: 'flag' }, el('strong', { text: 'Stale' }),
         `: our last fetch failed, so these numbers are from ${pacific(r.fetchedAt) || 'an earlier fetch'}.`)
       : null,
-    el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
-      el('dt', { text: s.label }),
-      el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
-    el('p', { class: 'muted updated', text: report.lastUpdatedText || 'The report gives no update time.' }),
-    el('p', { class: 'muted fetched', text: fetchedLine(r) }),
+    el('div', { class: 'stats-row' },
+      el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
+        el('dt', { text: s.label }),
+        el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
+      panel ? null : button),
+    times,
     forecast(r.forecast),
   ];
+}
+
+// The report's update time and our fetch time, for troubleshooting: hidden behind the "i" button
+// beside the numbers while the data is fine (card #22, item 4). "Stale" and "Not available" still
+// show as words above.
+function timesBox(resort, r) {
+  return el('div', { class: 'times', id: `times-${resort.id}`, hidden: true },
+    el('p', { class: 'muted updated', text: r.report.lastUpdatedText || 'The report gives no update time.' }),
+    el('p', { class: 'muted fetched', text: fetchedLine(r) }));
+}
+
+function infoButton(resort, times) {
+  const b = el('button', {
+    type: 'button',
+    class: 'info',
+    'aria-label': `${resort.name}: update and fetch times`,
+    'aria-expanded': 'false',
+    'aria-controls': times.id,
+    text: 'i',
+  });
+  b.addEventListener('click', () => {
+    times.hidden = !times.hidden;
+    b.setAttribute('aria-expanded', String(!times.hidden));
+  });
+  return b;
 }
 
 function forecast(days) {
@@ -138,13 +175,56 @@ function fillNumbers(list) {
   const byId = new Map(resorts(list).map((r) => [r.id, r]));
   for (const box of document.querySelectorAll('.numbers[data-numbers]')) {
     const r = byId.get(box.dataset.numbers);
-    if (r) box.replaceChildren(...numbersContent(r).filter(Boolean));
+    if (r) box.replaceChildren(...numbersContent(r, 'panel' in box.dataset).filter(Boolean));
+  }
+  watchPanelNumbers();
+}
+
+// The resort panel's five numbers sit in one row (layout 2). Where a window is too narrow for them
+// (three-digit numbers below about 1220px wide), the numbers' text gets smaller, just enough for all
+// five to fit, in half-pixel steps; the labels and the "in" keep their size (PR #23, Decision 9 b).
+// Measured, not computed, so it holds for whichever font the browser ends up with. Re-checked whenever
+// the row changes width (window resize, a scrollbar) and when the web fonts arrive.
+const MIN_NUMBER_PX = 10;
+function fitNumbers(dl) {
+  const dds = [...dl.querySelectorAll('dd')];
+  if (dds.length === 0) return;
+  for (const d of dds) d.style.fontSize = '';
+  // To the sub-pixel: scrollWidth rounds, which would let a number run half a pixel past its column.
+  const range = document.createRange();
+  const over = () => dds.some((d) => {
+    range.selectNodeContents(d);
+    return range.getBoundingClientRect().right > d.getBoundingClientRect().right;
+  });
+  let size = parseFloat(getComputedStyle(dds[0]).fontSize);
+  while (over() && size > MIN_NUMBER_PX) {
+    size -= 0.5;
+    for (const d of dds) d.style.fontSize = `${size}px`;
   }
 }
 
+const numberRows = new ResizeObserver((entries) => {
+  for (const { target, contentRect } of entries) {
+    // Only a change of width can change the fit; the fit itself may change the height.
+    if (target.dataset.fitWidth === String(contentRect.width)) continue;
+    target.dataset.fitWidth = String(contentRect.width);
+    fitNumbers(target);
+  }
+});
+
+function watchPanelNumbers() {
+  for (const dl of document.querySelectorAll('.numbers[data-panel] dl.stats')) {
+    fitNumbers(dl);
+    numberRows.observe(dl);
+  }
+}
+document.fonts?.addEventListener?.('loadingdone', () => {
+  for (const dl of document.querySelectorAll('.numbers[data-panel] dl.stats')) fitNumbers(dl);
+});
+
 function home(rs) {
   return [
-    el('p', { class: 'intro', text: 'One live cam per resort. Click a cam to play or pause it; "See all" shows that resort\'s cams.' }),
+    el('p', { class: 'intro', text: "Live webcams embedded from the resorts' camera feeds, plus snow numbers and forecasts a worker pulls from each resort's report every hour." }),
     el('div', { class: 'home-grid' }, rs.map((r) => {
       const cam = r.cams[0];
       return el('section', { class: 'resort card', 'data-resort': r.id },
@@ -164,25 +244,26 @@ function home(rs) {
 function resortView(r, bigId) {
   const big = r.cams.find((c) => c.id === bigId);
   const rest = r.cams.filter((c) => c !== big);
+  // A grid (card #22, layout 2, mockup "Resort view sizes"): on a laptop the big cam with the numbers
+  // panel to its right, as tall as the cam, the tiles in a row below; both rows centered, every size
+  // scaling with the window. On a phone: big cam, tiles, then numbers.
   return el('div', { class: 'resort-view' },
-    el('div', { class: 'cams' },
-      el('figure', { class: 'big' },
-        spot(big, r),
-        el('figcaption', {}, el('span', { class: 'cam-name big-name', tabindex: '-1', text: `${r.name} · ${big.name}` }))),
-      el('div', { class: 'tiles', 'data-count': String(rest.length) }, rest.map((c) =>
-        el('figure', { class: 'tile' },
-          spot(c, r),
-          el('figcaption', {},
-            el('span', { class: 'cam-name', text: c.name }),
-            el('button', {
-              type: 'button',
-              class: 'pill',
-              'aria-label': `Make ${c.name} the big cam`,
-              onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
-            }, 'Make big')))))),
+    el('figure', { class: 'big' },
+      spot(big, r),
+      el('figcaption', {}, el('span', { class: 'cam-name big-name', tabindex: '-1', text: `${r.name} · ${big.name}` }))),
+    el('div', { class: 'tiles', 'data-count': String(rest.length) }, rest.map((c) =>
+      el('figure', { class: 'tile' },
+        spot(c, r),
+        el('figcaption', {},
+          el('span', { class: 'cam-name', text: c.name }),
+          el('button', {
+            type: 'button',
+            class: 'pill',
+            'aria-label': `Make ${c.name} the big cam`,
+            onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
+          }, 'Make big'))))),
     el('aside', { class: 'resort-info card' },
-      el('h2', { text: r.name }),
-      numbers(r),
+      numbers(r, { panel: true }),
       el('a', { href: r.camsPage, target: '_blank', rel: 'noopener', text: `${r.name}'s own cams page` })));
 }
 
@@ -202,6 +283,7 @@ function render(list) {
   tabs(rs, state.view);
   if (state.view === 'home') main.replaceChildren(...home(rs));
   else main.replaceChildren(resortView(rs.find((r) => r.id === state.view), state.big));
+  watchPanelNumbers();
   // After "Make big": bring the new big cam into view and put keyboard focus on its name.
   if (showBig && state.view !== 'home') {
     const big = main.querySelector('.big');

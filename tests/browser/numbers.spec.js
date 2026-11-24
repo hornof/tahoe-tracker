@@ -30,7 +30,10 @@ async function expectNumbers(p, id) {
     await expect(stat.locator('dt')).toHaveText(LABELS[i]);
     await expect(stat.locator('dd')).toHaveText(`${dash(report[KEYS[i]])} in`);
   }
-  await expect(p.getByText(report.lastUpdatedText, { exact: true })).toBeVisible();
+  // Card #22, item 4: while the data is fine, neither time shows until the "i" button is pressed.
+  await expect(p.locator('.updated')).toBeHidden();
+  await expect(p.locator('.fetched')).toBeHidden();
+  await expect(p.getByText(/^(Updated|Fetched)/).filter({ visible: true })).toHaveCount(0);
   const rows = p.locator('tbody tr');
   await expect(rows).toHaveCount(5);
   expect(await rows.evaluateAll((trs) => trs.map((tr) => tr.dataset.date))).toEqual(forecast.map((d) => d.date));
@@ -51,6 +54,15 @@ test.beforeEach(async ({ page }) => {
   await stubBrownrice(page);
 });
 
+// The "i" button beside a resort's numbers: opens the update and fetch times (card #22, item 4).
+const infoButton = (p) => p.getByRole('button', { name: /update and fetch times/ });
+async function openTimes(p) {
+  const b = infoButton(p);
+  await expect(b).toHaveAttribute('aria-expanded', 'false');
+  await b.click();
+  await expect(b).toHaveAttribute('aria-expanded', 'true');
+}
+
 for (const view of ['home', ...IDS]) {
   test(`${view === 'home' ? 'home' : `the ${view} view`} shows the five numbers, update text and forecast`, async ({ page }) => {
     await stubSnow(page);
@@ -69,13 +81,15 @@ test('the forecast days are named in order from the first date', async ({ page }
   expect(days).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
 });
 
-test('every resort says when we fetched its numbers, in Pacific time', async ({ page }) => {
+test('every resort says when we fetched its numbers, in Pacific time, behind its "i" button', async ({ page }) => {
   await stubSnow(page);
   for (const view of ['home', ...IDS]) {
     await goto(page, view);
     for (const id of view === 'home' ? IDS : [view]) {
       // snow-stub's "ok" copy was fetched 30 minutes before 10:00 UTC on Monday 2026-11-23.
-      await expect(panel(page, view, id).locator('.fetched')).toHaveText('Fetched Mon Nov 23, 1:30 AM PST');
+      const p = panel(page, view, id);
+      await openTimes(p);
+      await expect(p.locator('.fetched')).toHaveText('Fetched Mon Nov 23, 1:30 AM PST');
     }
   }
 });
@@ -86,12 +100,83 @@ test('old numbers the Worker is refreshing show their fetch time and "refreshing
     await goto(page, view);
     if (view !== 'northstar') {
       const p = panel(page, view, 'heavenly');
+      await expectNumbers(p, 'heavenly');
+      await openTimes(p);
       await expect(p.locator('.fetched')).toContainText('Fetched Sun Nov 22, 11:00 PM PST');
       await expect(p.locator('.fetched')).toContainText('refreshing');
-      await expectNumbers(p, 'heavenly');
     }
-    if (view !== 'heavenly') await expect(panel(page, view, 'northstar').locator('.fetched')).not.toContainText('refreshing');
+    if (view !== 'heavenly') {
+      const n = panel(page, view, 'northstar');
+      await openTimes(n);
+      await expect(n.locator('.fetched')).not.toContainText('refreshing');
+    }
   }
+});
+
+test('the "i" button beside each resort\'s numbers shows both times, and hides them again', async ({ page }) => {
+  await stubSnow(page);
+  for (const view of ['home', ...IDS]) {
+    await goto(page, view);
+    const ids = view === 'home' ? IDS : [view];
+    for (const id of ids) {
+      const p = panel(page, view, id);
+      await expect(infoButton(p)).toHaveCount(1);
+      await openTimes(p);
+      await expect(p.locator('.updated')).toBeVisible();
+      await expect(p.locator('.updated')).toHaveText(PARSED[id].report.lastUpdatedText);
+      await expect(p.locator('.fetched')).toHaveText('Fetched Mon Nov 23, 1:30 AM PST');
+      // Opening one resort's times leaves the others closed.
+      for (const other of ids.filter((x) => x !== id)) {
+        await expect(infoButton(panel(page, view, other))).toHaveAttribute('aria-expanded', 'false');
+        await expect(panel(page, view, other).locator('.fetched')).toBeHidden();
+      }
+      // Pressing it again hides both times.
+      await infoButton(p).click();
+      await expect(infoButton(p)).toHaveAttribute('aria-expanded', 'false');
+      await expect(p.locator('.updated')).toBeHidden();
+      await expect(p.locator('.fetched')).toBeHidden();
+    }
+    // Where the button sits: on the home page beside the row of numbers, to its right; in the resort
+    // view's panel beside the resort's name, as in the mockup.
+    const p = panel(page, view, ids[0]);
+    const b = await infoButton(p).boundingBox();
+    const s = await (view === 'home'
+      ? p.locator('dl.stats')
+      : p.getByRole('heading', { level: 2, name: NAMES[view] })).boundingBox();
+    expect(b.x).toBeGreaterThanOrEqual(s.x + s.width - 1);
+    expect(b.y).toBeLessThan(s.y + s.height);
+    expect(b.y + b.height).toBeGreaterThan(s.y);
+    if (view !== 'home') expect(b.y + b.height, 'button above the numbers').toBeLessThanOrEqual((await p.locator('dl.stats').boundingBox()).y);
+  }
+});
+
+test('the numbers use the same stacked look on the home page and in the resort panel @width', async ({ page }) => {
+  await stubSnow(page);
+  const look = (p) => p.locator('[data-stat]').evaluateAll((els) => els.map((e) => {
+    const dd = getComputedStyle(e.querySelector('dd'));
+    const dt = getComputedStyle(e.querySelector('dt'));
+    const b = e.getBoundingClientRect();
+    return {
+      top: Math.round(b.top), left: Math.round(b.left), label: e.querySelector('dt').textContent,
+      dd: [dd.fontSize, dd.fontWeight, dd.fontFamily], dt: dt.fontSize,
+    };
+  }));
+  await page.goto('/');
+  await expect(page.locator('[data-stat]').first()).toBeVisible();
+  const home = await look(panel(page, 'home', 'heavenly'));
+  await page.goto('/#heavenly');
+  await expect(page.locator('[data-stat]').first()).toBeVisible();
+  const view = await look(panel(page, 'heavenly', 'heavenly'));
+  expect(home).toHaveLength(5);
+  expect(view).toHaveLength(5);
+  // Stacked: label above number, same type in both places.
+  expect(view.map(({ dd, dt }) => ({ dd, dt }))).toEqual(home.map(({ dd, dt }) => ({ dd, dt })));
+  // Home and the resort panel, at every width: the five in one row, in order (card #22, layout 2,
+  // which replaces Decision 4's three-and-two in the panel).
+  expect(new Set(home.map((x) => x.top)).size, 'home: five numbers in one row').toBe(1);
+  expect(new Set(view.map((x) => x.top)).size, 'panel: five numbers in one row').toBe(1);
+  expect(view.map((x) => x.label)).toEqual(['24 h', '48 h', '7 days', 'Base', 'Season']);
+  for (let i = 1; i < view.length; i++) expect(view[i].left).toBeGreaterThan(view[i - 1].left);
 });
 
 test('a stale resort says "stale" in words and keeps its numbers; the others don\'t', async ({ page }) => {
@@ -102,6 +187,9 @@ test('a stale resort says "stale" in words and keeps its numbers; the others don
   await expect(k.locator('.flag')).toContainText(/stale/i);
   // The stale copy was fetched 7 hours before 10:00 UTC on Monday: 7:00 PM Sunday, Pacific.
   await expect(k.locator('.flag')).toContainText('Sun Nov 22, 7:00 PM PST');
+  // The two times stay behind the "i" button; the warning is the only extra line.
+  await expect(k.locator('.updated')).toBeHidden();
+  await expect(k.locator('.fetched')).toBeHidden();
   await expectNumbers(k, 'kirkwood');
   for (const id of ['northstar', 'heavenly']) {
     await expect(panel(page, 'home', id)).not.toContainText(/stale/i);
