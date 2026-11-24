@@ -136,22 +136,30 @@ test('the "i" button beside each resort\'s numbers shows both times, and hides t
       await expect(p.locator('.updated')).toBeHidden();
       await expect(p.locator('.fetched')).toBeHidden();
     }
-    // The button sits beside the numbers: level with the row of five, to its right.
+    // Where the button sits: on the home page beside the row of numbers, to its right; in the resort
+    // view's panel beside the resort's name, as in the mockup.
     const p = panel(page, view, ids[0]);
     const b = await infoButton(p).boundingBox();
-    const s = await p.locator('dl.stats').boundingBox();
+    const s = await (view === 'home'
+      ? p.locator('dl.stats')
+      : p.getByRole('heading', { level: 2, name: NAMES[view] })).boundingBox();
     expect(b.x).toBeGreaterThanOrEqual(s.x + s.width - 1);
     expect(b.y).toBeLessThan(s.y + s.height);
     expect(b.y + b.height).toBeGreaterThan(s.y);
+    if (view !== 'home') expect(b.y + b.height, 'button above the numbers').toBeLessThanOrEqual((await p.locator('dl.stats').boundingBox()).y);
   }
 });
 
-test('the numbers look the same on the home page and in the resort view @width', async ({ page }) => {
+test('the numbers use the same stacked look on the home page and in the resort panel @width', async ({ page }) => {
   await stubSnow(page);
   const look = (p) => p.locator('[data-stat]').evaluateAll((els) => els.map((e) => {
     const dd = getComputedStyle(e.querySelector('dd'));
     const dt = getComputedStyle(e.querySelector('dt'));
-    return { top: Math.round(e.getBoundingClientRect().top), dd: [dd.fontSize, dd.fontWeight, dd.fontFamily], dt: dt.fontSize };
+    const b = e.getBoundingClientRect();
+    return {
+      top: Math.round(b.top), left: Math.round(b.left), label: e.querySelector('dt').textContent,
+      dd: [dd.fontSize, dd.fontWeight, dd.fontFamily], dt: dt.fontSize,
+    };
   }));
   await page.goto('/');
   await expect(page.locator('[data-stat]').first()).toBeVisible();
@@ -159,12 +167,25 @@ test('the numbers look the same on the home page and in the resort view @width',
   await page.goto('/#heavenly');
   await expect(page.locator('[data-stat]').first()).toBeVisible();
   const view = await look(panel(page, 'heavenly', 'heavenly'));
-  for (const stats of [home, view]) {
-    expect(stats).toHaveLength(5);
-    // Card #22, item 5: the stacked format, the five numbers in one row, in both places.
-    expect(new Set(stats.map((x) => x.top)).size, 'five numbers in one row').toBe(1);
-  }
+  expect(home).toHaveLength(5);
+  expect(view).toHaveLength(5);
+  // Stacked: label above number, same type in both places.
   expect(view.map(({ dd, dt }) => ({ dd, dt }))).toEqual(home.map(({ dd, dt }) => ({ dd, dt })));
+  // Home: the five in one row.
+  expect(new Set(home.map((x) => x.top)).size, 'home: five numbers in one row').toBe(1);
+  if (page.viewportSize().width >= 761) {
+    // Resort panel on a laptop, as the mockup: 24 h, 48 h, 7 days on the first row; Base, Season below,
+    // in the first two columns.
+    const rows = [...new Set(view.map((x) => x.top))].sort((a, b) => a - b);
+    expect(rows, 'panel: two rows').toHaveLength(2);
+    expect(view.filter((x) => x.top === rows[0]).map((x) => x.label)).toEqual(['24 h', '48 h', '7 days']);
+    expect(view.filter((x) => x.top === rows[1]).map((x) => x.label)).toEqual(['Base', 'Season']);
+    expect(view[3].left).toBe(view[0].left);
+    expect(view[4].left).toBe(view[1].left);
+  } else {
+    // Phone: unchanged, the five in one row.
+    expect(new Set(view.map((x) => x.top)).size, 'phone panel: five numbers in one row').toBe(1);
+  }
 });
 
 test('a stale resort says "stale" in words and keeps its numbers; the others don\'t', async ({ page }) => {

@@ -105,20 +105,22 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .resort-info { grid-area: info; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big .spot { border-radius: 10px; }
-/* Laptop: the big cam's width is capped by the window's height so the tile row (names and "Make big"
-   too) fits on screen (Luke, Decision 8 b); the numbers panel takes the rest of the width, at least 360px
-   so the five numbers stay in one row beside the "i" button.
-   The tile row's height follows the page width: three 16:9 tiles across (12px gaps) plus their caption.
-   The rest is the page's top padding, the header, the gaps and the big cam's caption. */
+/* Laptop, as the mockup: the numbers panel is a fixed 360px and the big cam (16:9, no height cap)
+   takes the rest of the width. The tile row may run below the window on a short screen; Luke accepted
+   that over card #15's "tile row fits" rule (PR #23, Decision 4 b). Inside the panel the numbers go
+   three to a row: 24 h, 48 h, 7 days; then Base, Season. */
 @media (min-width: 761px) {
   .resort-view {
-    --content: calc(min(1376px, 100vw) - 64px);
-    --tile-row: calc((var(--content) - 24px) * 9 / 48 + 48px);
-    --big-h: calc(100vh - 24px - 48px - 18px - 40px - 18px - var(--tile-row) - 12px);
-    grid-template-columns: minmax(0, max(360px, calc(var(--big-h) * 16 / 9))) minmax(360px, 1fr);
+    gap: 16px 20px;
+    grid-template-columns: minmax(0, 1fr) 360px;
     grid-template-areas: "big info" "tiles tiles";
   }
+  .numbers[data-panel] .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; }
 }
+/* The panel's heading row: the resort's name with the "i" button beside it. */
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.numbers[data-panel] { border-top: 0; padding-top: 0; }
+.numbers[data-panel] .panel-head { border-bottom: 1px solid var(--soft-line); padding-bottom: 10px; }
 .big-name { font-size: 20px; }
 .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tile .cam-name { font-size: 14px; }

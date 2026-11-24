@@ -64,8 +64,15 @@ function check(cam, resort) {
 // resort says "Loading"; if the request fails, each says "Not available".
 let snow = { state: 'loading' }; // { state: 'loading' } | { state: 'ok', byId } | { state: 'failed' }
 
-function numbers(resort) {
-  return el('div', { class: 'numbers', 'data-numbers': resort.id }, numbersContent(resort));
+// `panel`: the resort view's numbers panel (mockup "Resort view, tightened"), which starts with the
+// resort's name and puts the "i" button beside it. On the home page the button sits beside the numbers.
+function numbers(resort, { panel = false } = {}) {
+  return el('div', { class: 'numbers', 'data-numbers': resort.id, 'data-panel': panel ? '' : null },
+    numbersContent(resort, panel));
+}
+
+function panelHead(resort, button) {
+  return el('div', { class: 'panel-head' }, el('h2', { text: resort.name }), button);
 }
 
 function notAvailable(why, link) {
@@ -75,21 +82,24 @@ function notAvailable(why, link) {
   ];
 }
 
-function numbersContent(resort) {
-  if (snow.state === 'loading') return [el('p', { class: 'muted', text: 'Loading snow numbers…' })];
+function numbersContent(resort, panel = false) {
+  const head = panel ? panelHead(resort, null) : null;
+  if (snow.state === 'loading') return [head, el('p', { class: 'muted', text: 'Loading snow numbers…' })];
   // With no /api/snow answer there is no report link, so link to the resort's page from cams.json.
   if (snow.state === 'failed') {
-    return notAvailable("the snow numbers didn't load. Try reloading.",
-      { href: resort.camsPage, text: `See ${resort.name}'s own page` });
+    return [head, ...notAvailable("the snow numbers didn't load. Try reloading.",
+      { href: resort.camsPage, text: `See ${resort.name}'s own page` })];
   }
   const r = snow.byId.get(resort.id);
   if (!r || r.status === 'not-available' || !r.report) {
-    return notAvailable("we haven't been able to read this resort's snow report yet.",
-      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null);
+    return [head, ...notAvailable("we haven't been able to read this resort's snow report yet.",
+      r?.reportUrl ? { href: r.reportUrl, text: `See ${resort.name}'s snow report` } : null)];
   }
   const { report } = r;
   const times = timesBox(resort, r);
+  const button = infoButton(resort, times);
   return [
+    panel ? panelHead(resort, button) : null,
     r.status === 'stale'
       ? el('p', { class: 'flag' }, el('strong', { text: 'Stale' }),
         `: our last fetch failed, so these numbers are from ${pacific(r.fetchedAt) || 'an earlier fetch'}.`)
@@ -98,7 +108,7 @@ function numbersContent(resort) {
       el('dl', { class: 'stats' }, STATS.map((s) => el('div', { class: 'stat', 'data-stat': s.key },
         el('dt', { text: s.label }),
         el('dd', {}, shown(report[s.key]), el('span', { class: 'unit', text: ' in' }))))),
-      infoButton(resort, times)),
+      panel ? null : button),
     times,
     forecast(r.forecast),
   ];
@@ -165,7 +175,7 @@ function fillNumbers(list) {
   const byId = new Map(resorts(list).map((r) => [r.id, r]));
   for (const box of document.querySelectorAll('.numbers[data-numbers]')) {
     const r = byId.get(box.dataset.numbers);
-    if (r) box.replaceChildren(...numbersContent(r).filter(Boolean));
+    if (r) box.replaceChildren(...numbersContent(r, 'panel' in box.dataset).filter(Boolean));
   }
 }
 
@@ -191,9 +201,9 @@ function home(rs) {
 function resortView(r, bigId) {
   const big = r.cams.find((c) => c.id === bigId);
   const rest = r.cams.filter((c) => c !== big);
-  // A grid (card #22, mockup "Resort view, tightened"): on a laptop the big cam and the numbers panel
-  // side by side, the tiles in a row below, both rows on the same left and right edges. On a phone:
-  // big cam, tiles, then numbers.
+  // A grid (card #22, mockup "Resort view, tightened"): on a laptop the big cam takes the width left
+  // beside a 360px numbers panel, the tiles in a row below, both rows on the same left and right edges.
+  // On a phone: big cam, tiles, then numbers.
   return el('div', { class: 'resort-view' },
     el('figure', { class: 'big' },
       spot(big, r),
@@ -210,8 +220,7 @@ function resortView(r, bigId) {
             onclick: () => { showBig = true; location.hash = hashFor({ view: r.id, big: c.id }); },
           }, 'Make big'))))),
     el('aside', { class: 'resort-info card' },
-      el('h2', { text: r.name }),
-      numbers(r),
+      numbers(r, { panel: true }),
       el('a', { href: r.camsPage, target: '_blank', rel: 'noopener', text: `${r.name}'s own cams page` })));
 }
 

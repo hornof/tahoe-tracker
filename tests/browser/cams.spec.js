@@ -250,8 +250,8 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       const [tiles] = await boxes(page.locator('.tiles'));
       const right = (b) => b.x + b.width;
       const bottom = (b) => b.y + b.height;
-      // The big cam keeps its 16:9 shape.
-      expect(Math.abs(spot.width / spot.height - 16 / 9)).toBeLessThan(0.02);
+      // Every cam, big and tiles, keeps the 16:9 shape.
+      for (const s of await boxes(page.locator('.spot'))) expect(Math.abs(s.width / s.height - 16 / 9)).toBeLessThan(0.02);
       // Card #22, item 5: the big cam and the tile row share a left edge, in every width.
       expect(Math.abs(spot.x - tiles.x), 'big cam left = tile row left').toBeLessThan(1);
       if (narrow) {
@@ -261,19 +261,19 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
         expect(tiles.y).toBeGreaterThanOrEqual(bottom(big));
         expect(info.y).toBeGreaterThanOrEqual(bottom(tiles));
       } else {
-        // Laptop (mockup "Resort view, tightened"): the numbers panel sits right beside the big cam,
-        // tops aligned, and ends at the tile row's right edge; the tiles are a row below both.
+        // Laptop, the mockup "Resort view, tightened" (PR #23, Decision 4 b; this replaces card #15's
+        // "tile row fits in the window" check, which Luke dropped for the resort view):
+        // the numbers panel is 360px wide, right beside the big cam with tops aligned, and ends at the
+        // tile row's right edge; the tiles are a row below both.
+        expect(Math.abs(info.width - 360), 'panel 360px wide').toBeLessThan(1);
         expect(info.x, 'panel right of the big cam').toBeGreaterThanOrEqual(right(spot));
         expect(info.x - right(spot), 'panel right beside the big cam').toBeLessThanOrEqual(24);
         expect(Math.abs(info.y - spot.y), 'panel top = big cam top').toBeLessThan(1);
         expect(Math.abs(right(info) - right(tiles)), 'panel right = tile row right').toBeLessThan(1);
         expect(tiles.y).toBeGreaterThanOrEqual(Math.max(bottom(big), bottom(info)));
-        // Luke, Decision 8 (b), kept from card #15: the whole tile row (tiles, names and "Make big"
-        // buttons) fits in the window without scrolling.
-        expect(await page.evaluate(() => window.scrollY)).toBe(0);
-        const h = page.viewportSize().height;
-        expect(bottom(tiles), 'tile row bottom inside the window').toBeLessThanOrEqual(h);
-        for (const b of await boxes(page.locator('.tile button'))) expect(bottom(b)).toBeLessThanOrEqual(h);
+        // The big cam takes the rest of the row, and is wider than every tile.
+        expect(Math.abs(spot.width - (tiles.width - 360 - (info.x - right(spot)))), 'big cam fills the rest').toBeLessThan(1);
+        for (const t of await boxes(page.locator('.tile .spot'))) expect(spot.width, 'big cam wider than a tile').toBeGreaterThan(t.width);
       }
     }
   });
