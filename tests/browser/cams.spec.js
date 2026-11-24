@@ -298,6 +298,20 @@ async function layout2(page) {
       rows: all('.resort-info tbody tr'),
       contentBottom,
       innerBottom,
+      // The space between each part of the panel and the next, top to bottom, and the space the CSS asks
+      // for there. Less space than asked means the content is taller than the panel and got squeezed.
+      squeeze: (() => {
+        const parts = [...info.querySelectorAll('.numbers > *'), ...info.querySelectorAll(':scope > a')]
+          .filter((e) => e.getClientRects().length > 0);
+        const out = [];
+        for (let i = 1; i < parts.length; i++) {
+          const parent = parts[i].parentElement;
+          const want = parseFloat(getComputedStyle(parent).rowGap) || 0;
+          const got = parts[i].getBoundingClientRect().top - parts[i - 1].getBoundingClientRect().bottom;
+          if (got < want - 0.5) out.push(`${parts[i].tagName}.${parts[i].className}: ${got.toFixed(1)}px space, want ${want}px`);
+        }
+        return out;
+      })(),
     };
   });
 }
@@ -326,6 +340,7 @@ function expectLayout2(m, label) {
   expect(m.rows).toHaveLength(5);
   for (const r of m.rows) near(r.height, m.rows[0].height, 'forecast rows the same height');
   near(m.contentBottom, m.innerBottom, 'panel content ends at the panel bottom');
+  expect(m.squeeze, `${label}: panel content fits without squeezing`).toEqual([]);
   // Tile row: below the top row, each 370 wide (16:9), 14 apart, centered.
   const t = m.tiles;
   expect(t.length).toBeGreaterThan(0);
