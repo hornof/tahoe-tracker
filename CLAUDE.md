@@ -30,4 +30,4 @@
 - Claude Code works on GitHub as its own GitHub account when the project has one (apb-setup step 5), and as the human otherwise. Its token lives only in `.claude/settings.local.json`, never in a committed file. The orchestrator, builders and reviewers share that one account, so end every PR description and comment Claude writes with its role, for example `— Claude (orchestrator)`.
 - Problems with the apb process itself go on hornof/apb as one issue per problem, labeled `from-` followed by this repo's name.
 ## Project rules
-(none yet; add one line per rule when something goes wrong)
+- **What Luke has agreed is the spec.** Build exactly that: a mockup, a decision, his wording. If something beyond it, or something that conflicts with it (an older rule, a test, a default), would change the result, ask him while deciding; never resolve it during the build, and say so in every builder's brief. Small bookkeeping needs no ask. (2026-11-24, after the PR #23 resort layout and the earlier 72 h and defaulted-decision mistakes.)
