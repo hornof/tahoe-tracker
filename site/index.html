@@ -93,9 +93,8 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .card-head, .cam-bar, figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .card-head { align-items: baseline; }
 
-/* Resort view (card #22, mockup "Resort view, tightened"): the big cam and the numbers panel side by
-   side, the other cams in a row below; both rows share the same left and right edges. A phone stacks
-   them: big cam, tiles, numbers. */
+/* Resort view (card #22, layout 2, mockup "Resort view sizes"): the big cam with the numbers panel to
+   its right, the other cams in a row below. A phone stacks them: big cam, tiles, numbers. */
 .resort-view {
   display: grid; gap: 18px; align-items: start;
   grid-template-columns: minmax(0, 1fr); grid-template-areas: "big" "tiles" "info";
@@ -105,18 +104,6 @@ nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .resort-info { grid-area: info; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big .spot { border-radius: 10px; }
-/* Laptop, as the mockup: the numbers panel is a fixed 360px and the big cam (16:9, no height cap)
-   takes the rest of the width. The tile row may run below the window on a short screen; Luke accepted
-   that over card #15's "tile row fits" rule (PR #23, Decision 4 b). Inside the panel the numbers go
-   three to a row: 24 h, 48 h, 7 days; then Base, Season. */
-@media (min-width: 761px) {
-  .resort-view {
-    gap: 16px 20px;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    grid-template-areas: "big info" "tiles tiles";
-  }
-  .numbers[data-panel] .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; }
-}
 /* The panel's heading row: the resort's name with the "i" button beside it. */
 .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .numbers[data-panel] { border-top: 0; padding-top: 0; }
@@ -126,6 +113,31 @@ figure { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 
 .tile .cam-name { font-size: 14px; }
 .resort-info { min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .resort-info h2 { font-size: 24px; }
+/* Laptop and desktop, layout 2 as agreed on a 1440px-wide window: big cam 720 x 405, the numbers panel
+   400 wide and 20px to its right, exactly as tall as the cam, tops aligned, the five numbers in one row;
+   the other cams 370 wide, 14px apart. Both rows are centered on the page. Every size scales with the
+   window (PR #23, Decision 5 a): --u is 1px at 1440 wide, so 1280 is 8/9 of these sizes and 1920 is 4/3.
+   The panel's spare height goes into the forecast rows. */
+body { container-type: inline-size; }
+@media (min-width: 761px) {
+  .resort-view {
+    --u: calc(100cqw / 1440);
+    gap: calc(16 * var(--u)) calc(20 * var(--u));
+    grid-template-columns: calc(720 * var(--u)) calc(400 * var(--u));
+    grid-template-areas: "big info" "tiles tiles";
+    justify-content: center;
+  }
+  .resort-info { height: calc(405 * var(--u)); }
+  .resort-info .numbers { flex: 1 1 auto; min-height: 0; }
+  .resort-info .forecast { flex: 1 1 auto; }
+  /* A set height marks the header rows as fixed, so the table's spare height goes to the day rows. */
+  .resort-info .forecast thead tr { height: 1px; }
+  /* Every day row then has a line above and below it, so all five start out, and stay, the same height. */
+  .resort-info .forecast { border-bottom: 1px solid transparent; }
+  .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(14 * var(--u)); }
+  .tile { width: calc(370 * var(--u)); }
+  .numbers[data-panel] .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
 
 @media (max-width: 760px) {
   .page { padding: 16px 16px 32px; }

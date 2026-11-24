@@ -171,21 +171,12 @@ test('the numbers use the same stacked look on the home page and in the resort p
   expect(view).toHaveLength(5);
   // Stacked: label above number, same type in both places.
   expect(view.map(({ dd, dt }) => ({ dd, dt }))).toEqual(home.map(({ dd, dt }) => ({ dd, dt })));
-  // Home: the five in one row.
+  // Home and the resort panel, at every width: the five in one row, in order (card #22, layout 2,
+  // which replaces Decision 4's three-and-two in the panel).
   expect(new Set(home.map((x) => x.top)).size, 'home: five numbers in one row').toBe(1);
-  if (page.viewportSize().width >= 761) {
-    // Resort panel on a laptop, as the mockup: 24 h, 48 h, 7 days on the first row; Base, Season below,
-    // in the first two columns.
-    const rows = [...new Set(view.map((x) => x.top))].sort((a, b) => a - b);
-    expect(rows, 'panel: two rows').toHaveLength(2);
-    expect(view.filter((x) => x.top === rows[0]).map((x) => x.label)).toEqual(['24 h', '48 h', '7 days']);
-    expect(view.filter((x) => x.top === rows[1]).map((x) => x.label)).toEqual(['Base', 'Season']);
-    expect(view[3].left).toBe(view[0].left);
-    expect(view[4].left).toBe(view[1].left);
-  } else {
-    // Phone: unchanged, the five in one row.
-    expect(new Set(view.map((x) => x.top)).size, 'phone panel: five numbers in one row').toBe(1);
-  }
+  expect(new Set(view.map((x) => x.top)).size, 'panel: five numbers in one row').toBe(1);
+  expect(view.map((x) => x.label)).toEqual(['24 h', '48 h', '7 days', 'Base', 'Season']);
+  for (let i = 1; i < view.length; i++) expect(view[i].left).toBeGreaterThan(view[i - 1].left);
 });
 
 test('a stale resort says "stale" in words and keeps its numbers; the others don\'t', async ({ page }) => {

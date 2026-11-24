@@ -201,9 +201,9 @@ function home(rs) {
 function resortView(r, bigId) {
   const big = r.cams.find((c) => c.id === bigId);
   const rest = r.cams.filter((c) => c !== big);
-  // A grid (card #22, mockup "Resort view, tightened"): on a laptop the big cam takes the width left
-  // beside a 360px numbers panel, the tiles in a row below, both rows on the same left and right edges.
-  // On a phone: big cam, tiles, then numbers.
+  // A grid (card #22, layout 2, mockup "Resort view sizes"): on a laptop the big cam with the numbers
+  // panel to its right, as tall as the cam, the tiles in a row below; both rows centered, every size
+  // scaling with the window. On a phone: big cam, tiles, then numbers.
   return el('div', { class: 'resort-view' },
     el('figure', { class: 'big' },
       spot(big, r),

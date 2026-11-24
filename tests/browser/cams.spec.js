@@ -252,29 +252,118 @@ for (const view of ['', ...['northstar', 'heavenly', 'kirkwood']]) {
       const bottom = (b) => b.y + b.height;
       // Every cam, big and tiles, keeps the 16:9 shape.
       for (const s of await boxes(page.locator('.spot'))) expect(Math.abs(s.width / s.height - 16 / 9)).toBeLessThan(0.02);
-      // Card #22, item 5: the big cam and the tile row share a left edge, in every width.
-      expect(Math.abs(spot.x - tiles.x), 'big cam left = tile row left').toBeLessThan(1);
       if (narrow) {
-        // Stacked: the big cam spans the column, the tiles below it, the numbers panel below the tiles.
+        // Phone, unchanged by layout 2: stacked. The big cam spans the column with the tile row on the
+        // same left and right edges below it (card #22, item 5), the numbers panel below the tiles.
         expect(big.width).toBeGreaterThan(page.viewportSize().width - 40);
+        expect(Math.abs(spot.x - tiles.x), 'big cam left = tile row left').toBeLessThan(1);
         expect(Math.abs(right(spot) - right(tiles)), 'big cam right = tile row right').toBeLessThan(1);
         expect(tiles.y).toBeGreaterThanOrEqual(bottom(big));
         expect(info.y).toBeGreaterThanOrEqual(bottom(tiles));
       } else {
-        // Laptop, the mockup "Resort view, tightened" (PR #23, Decision 4 b; this replaces card #15's
-        // "tile row fits in the window" check, which Luke dropped for the resort view):
-        // the numbers panel is 360px wide, right beside the big cam with tops aligned, and ends at the
-        // tile row's right edge; the tiles are a row below both.
-        expect(Math.abs(info.width - 360), 'panel 360px wide').toBeLessThan(1);
+        // Laptop: layout 2 (its sizes are checked in "layout 2" below). The panel is right of the big
+        // cam, the tiles a row below both.
         expect(info.x, 'panel right of the big cam').toBeGreaterThanOrEqual(right(spot));
-        expect(info.x - right(spot), 'panel right beside the big cam').toBeLessThanOrEqual(24);
-        expect(Math.abs(info.y - spot.y), 'panel top = big cam top').toBeLessThan(1);
-        expect(Math.abs(right(info) - right(tiles)), 'panel right = tile row right').toBeLessThan(1);
         expect(tiles.y).toBeGreaterThanOrEqual(Math.max(bottom(big), bottom(info)));
-        // The big cam takes the rest of the row, and is wider than every tile.
-        expect(Math.abs(spot.width - (tiles.width - 360 - (info.x - right(spot)))), 'big cam fills the rest').toBeLessThan(1);
-        for (const t of await boxes(page.locator('.tile .spot'))) expect(spot.width, 'big cam wider than a tile').toBeGreaterThan(t.width);
       }
     }
   });
 }
+
+// Layout 2 (card #22, mockup "Resort view sizes"; it replaces Decision 4's 360px panel). Agreed on a
+// 1440 x 785 window: big cam 720 x 405, the panel 20px to its right, 400 wide and exactly as tall as the
+// cam with tops aligned, the five numbers in one row, the spare height in the forecast rows; the other
+// cams 370 wide, 14px apart; both rows centered on the page. Every size scales with the window
+// (Decision 5 a): s = window width / 1440.
+const AGREED = { cam: 720, gap: 20, panel: 400, tile: 370, tileGap: 14 };
+
+async function layout2(page) {
+  return page.evaluate(() => {
+    const box = (e) => { const b = e.getBoundingClientRect(); return { x: b.left, y: b.top, width: b.width, height: b.height }; };
+    const q = (s) => box(document.querySelector(s));
+    const all = (s) => [...document.querySelectorAll(s)].map(box);
+    const info = document.querySelector('.resort-info');
+    const style = getComputedStyle(info);
+    // The lowest bottom edge of anything inside the panel, and the panel's inner bottom edge.
+    const contentBottom = Math.max(...[...info.querySelectorAll('*')].map((e) => e.getBoundingClientRect().bottom));
+    const innerBottom = info.getBoundingClientRect().bottom - parseFloat(style.paddingBottom) - parseFloat(style.borderBottomWidth);
+    return {
+      width: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      spot: q('.big .spot'),
+      info: q('.resort-info'),
+      tiles: all('.tile .spot'),
+      stats: all('.resort-info [data-stat]'),
+      statsCut: [...document.querySelectorAll('.resort-info [data-stat] dd, .resort-info dl.stats')].filter((e) => e.scrollWidth > e.clientWidth + 1).length,
+      rows: all('.resort-info tbody tr'),
+      contentBottom,
+      innerBottom,
+    };
+  });
+}
+
+function expectLayout2(m, label) {
+  const s = m.width / 1440;
+  const near = (got, want, what) => expect(Math.abs(got - want), `${label}: ${what} (got ${got}, want ${want})`).toBeLessThan(1);
+  const right = (b) => b.x + b.width;
+  const mid = (a, b) => (a + b) / 2;
+  expect(m.scrollWidth, `${label}: no sideways scroll`).toBeLessThanOrEqual(m.width);
+  // Top row: big cam, gap, panel.
+  near(m.spot.width, AGREED.cam * s, 'big cam width');
+  near(m.spot.height, m.spot.width * 9 / 16, 'big cam 16:9');
+  near(m.info.x - right(m.spot), AGREED.gap * s, 'gap between cam and panel');
+  near(m.info.width, AGREED.panel * s, 'panel width');
+  near(m.info.height, m.spot.height, 'panel as tall as the big cam');
+  near(m.info.y, m.spot.y, 'panel top = big cam top');
+  near(mid(m.spot.x, right(m.info)), m.width / 2, 'top row centered');
+  // The five numbers in one row, none cut off.
+  expect(m.stats, `${label}: five numbers`).toHaveLength(5);
+  for (const st of m.stats) near(st.y, m.stats[0].y, 'numbers in one row');
+  for (let i = 1; i < m.stats.length; i++) expect(m.stats[i].x, `${label}: numbers left to right`).toBeGreaterThan(m.stats[i - 1].x);
+  expect(m.statsCut, `${label}: numbers cut off`).toBe(0);
+  // The spare height is in the forecast rows: they are all the same height, and the panel's content
+  // reaches its bottom edge, with no gap below and nothing spilling out.
+  expect(m.rows).toHaveLength(5);
+  for (const r of m.rows) near(r.height, m.rows[0].height, 'forecast rows the same height');
+  near(m.contentBottom, m.innerBottom, 'panel content ends at the panel bottom');
+  // Tile row: below the top row, each 370 wide (16:9), 14 apart, centered.
+  const t = m.tiles;
+  expect(t.length).toBeGreaterThan(0);
+  for (const x of t) {
+    near(x.width, AGREED.tile * s, 'tile width');
+    near(x.height, x.width * 9 / 16, 'tile 16:9');
+    near(x.y, t[0].y, 'tiles in one row');
+    expect(x.y, `${label}: tiles below the top row`).toBeGreaterThan(m.spot.y + m.spot.height);
+  }
+  for (let i = 1; i < t.length; i++) near(t[i].x - right(t[i - 1]), AGREED.tileGap * s, 'gap between tiles');
+  near(mid(t[0].x, right(t[t.length - 1])), m.width / 2, 'tile row centered');
+}
+
+test('layout 2: the agreed sizes at 1440, scaled at 1280 and 1920', async ({ page }) => {
+  for (const id of RESORTS.map((r) => r.id)) {
+    const seen = {};
+    for (const [w, h] of [[1440, 785], [1280, 800], [1920, 1080]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto(`/#${id}`);
+      await page.locator('[data-stat]').first().waitFor();
+      const m = await layout2(page);
+      expectLayout2(m, `${id} @${w}`);
+      seen[w] = m;
+    }
+    // At exactly 1440 the sizes are the agreed ones, to the pixel.
+    expect(seen[1440].spot.width).toBeCloseTo(720, 0);
+    expect(seen[1440].spot.height).toBeCloseTo(405, 0);
+    expect(seen[1440].info.width).toBeCloseTo(400, 0);
+    expect(seen[1440].info.height).toBeCloseTo(405, 0);
+    // Same proportions at every width: each size at 1280 and 1920 is the 1440 size times the width ratio.
+    for (const w of [1280, 1920]) {
+      const k = seen[w].width / seen[1440].width;
+      for (const part of ['spot', 'info']) {
+        for (const dim of ['width', 'height']) {
+          expect(Math.abs(seen[w][part][dim] - seen[1440][part][dim] * k), `${id}: ${part} ${dim} @${w} scales`).toBeLessThan(1);
+        }
+      }
+      expect(Math.abs(seen[w].tiles[0].width - seen[1440].tiles[0].width * k), `${id}: tile @${w} scales`).toBeLessThan(1);
+    }
+  }
+});
