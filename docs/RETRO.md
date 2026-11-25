@@ -103,6 +103,25 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 - **Builders departing from their rules.** One wrote a helper before its tests; one ran an extra check unasked. Both were put right, but each needed a round.
 - **Hook busywork.** Assignees, card moves and "no action" replies on every reviewer note, before every hand-off.
 
+## Feedback round one (card #22, PR #23), 2026-11-24
+
+### What worked
+- **The workshop.** All five feedback items were agreed in chat, in Luke's own words, before any build started.
+- **The size explorer.** Sliders on the canvas let Luke try cam and panel sizes against the bottom of his screen. He found layout 2 in a few minutes and approved it on sight.
+- **Short questions.** Decision 6, rewritten as one plain question, one line of why and two short options, was "super easy to follow". That's now the format for every question.
+- **Builders who stop.** Twice the builder stopped on a conflict with what Luke had agreed instead of choosing for him, which led to Decisions 6–9.
+
+### What didn't work
+- **The first layout ignored the mockup.** The brief kept an older "tile row fits on screen" rule over the approved mockup. Fix: the project rule "What Luke has agreed is the spec" (PR #24).
+- **Designed for one screen.** The size explorer used fixed pixels for a 1280 × 800 laptop (Luke's is about 1440 × 785), and nobody said up front that other widths would need their own answers. That surfaced at the end as four more decisions.
+- **Hard-to-read questions.** "Phone layout" for laptop windows, undefined terms ("the content", "1440"), pixel math in the question. Luke had to ask for rewrites, and a rewrite done in place without a reply left him looking for an answer.
+- **A missed test failure.** The full test run failed at 3:08 and nobody told Luke until he asked at 3:35.
+- **Mac vs Linux.** Tests passed on the builder's Mac and failed on GitHub's Linux twice: once a real layout problem (big snow totals), once a test that measured too early.
+
+### Try next time
+- When a design starts at one screen size, say at the start which other sizes it must handle, and ask those questions while designing.
+- Check every CI result when it finishes, not when asked.
+
 ## The whole project
 
 ### How long it took
