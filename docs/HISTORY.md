@@ -32,5 +32,5 @@ What isn't: routine progress ("wrote tests, they pass"), anything the board or t
 
 ## 2026-11-24: Feedback round one (card #22, PR #23)
 - New intro text, Mid Mountain as Northstar's default cam, and the update times moved behind an "i" button.
-- The resort view became "layout 2", chosen by Luke with a size explorer on the canvas: big cam beside a numbers box of the same height, the other cams in a centered row below. It scales with the window, stops growing at the title bar's width, and stacks below 1000 px. The numbers box scrolls if its text doesn't fit, and big snow totals get smaller text where needed.
+- The resort view became "layout 2", chosen by Luke with a size explorer on the canvas: big cam beside a numbers panel of the same height, the other cams in a centered row below. It scales with the window, stops growing at the title bar's width, and stacks below 1000 px. The numbers panel scrolls if its text doesn't fit, and big snow totals get smaller text where needed.
 - This replaced card #15's "tile row fits on screen" rule. The first try kept that rule over the approved mockup, which led to the project rule "What Luke has agreed is the spec" (PR #24).
