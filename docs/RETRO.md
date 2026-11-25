@@ -108,7 +108,7 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 ### What worked (Claude)
 - **The workshop.** All five feedback items were agreed in chat, in Luke's own words, before any build started.
 - **The size explorer.** Sliders on the canvas let Luke try cam and numbers panel sizes against the bottom of his screen. He found layout 2 in a few minutes and approved it on sight.
-- **Short questions (Luke).** Decision 6, rewritten as one plain question, one line of why and two short options, was "super easy to follow". That's now the format for every question.
+- **Short questions (Luke).** Decision 6, rewritten as one plain question, one line of why and two short options, was "super easy to follow". That's now the format for every question, a project rule in CLAUDE.md.
 - **Builders who stop.** Twice the builder stopped on a conflict with what Luke had agreed instead of choosing for him, which led to Decisions 6–9.
 
 ### What didn't work (Claude)

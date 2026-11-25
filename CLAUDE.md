@@ -31,3 +31,4 @@
 - Problems with the apb process itself go on hornof/apb as one issue per problem, labeled `from-` followed by this repo's name.
 ## Project rules
 - **What Luke has agreed is the spec.** Build exactly that: a mockup, a decision, his wording. If something beyond it, or something that conflicts with it (an older rule, a test, a default), would change the result, ask him while deciding; never resolve it during the build, and say so in every builder's brief. Small bookkeeping needs no ask. (2026-11-24, after the PR #23 resort layout and the earlier 72 h and defaulted-decision mistakes.)
+- **Questions for Luke are short and plain.** One plain question, one sentence of why, short lettered options. No recaps, no pixel math, no undefined terms; name things by what Luke sees. This applies to every question, in chat or on GitHub, from every session. (2026-11-24, PR #23 Decision 6; PR #26 Decision 7.)
