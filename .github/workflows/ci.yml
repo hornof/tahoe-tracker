@@ -7,7 +7,7 @@
 # - Quick set, on every other push to a PR: the whole browser suite in one browser at one width,
 #   plus the browser test files the PR changed (and the ones that import changed files) in every
 #   browser at one width.
-# - A change to docs only (LOG.md, README.md, docs/) skips the browser tests.
+# - A change to docs only (LOG.md, README.md, CLAUDE.md, docs/) skips the browser tests.
 # - The unit tests run every time.
 name: CI
 
@@ -47,7 +47,7 @@ jobs:
           # A PR is checked out as a merge commit, whose first parent is the base branch.
           BASE: ${{ github.event_name == 'push' && github.event.before || 'HEAD^1' }}
         run: |
-          if git diff --name-only "$BASE" HEAD | grep -qvE '^(LOG\.md|README\.md|docs/)'; then
+          if git diff --name-only "$BASE" HEAD | grep -qvE '^(LOG\.md|README\.md|CLAUDE\.md|docs/)'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
