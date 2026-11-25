@@ -103,6 +103,25 @@ What made this stage pleasant: one short doc, a few simple questions one at a ti
 - **Builders departing from their rules.** One wrote a helper before its tests; one ran an extra check unasked. Both were put right, but each needed a round.
 - **Hook busywork.** Assignees, card moves and "no action" replies on every reviewer note, before every hand-off.
 
+## Feedback round one (card #22, PR #23), 2026-11-24
+
+### What worked (Claude)
+- **The workshop.** All five feedback items were agreed in chat, in Luke's own words, before any build started.
+- **The size explorer.** Sliders on the canvas let Luke try cam and numbers panel sizes against the bottom of his screen. He found layout 2 in a few minutes and approved it on sight.
+- **Short questions (Luke).** Decision 6, rewritten as one plain question, one line of why and two short options, was "super easy to follow". That's now the format for every question, a project rule in CLAUDE.md.
+- **Builders who stop.** Twice the builder stopped on a conflict with what Luke had agreed instead of choosing for him, which led to Decisions 6–9.
+
+### What didn't work (Claude)
+- **The first layout ignored the mockup.** The card's acceptance list and the builder's brief kept an older "tile row fits on screen" rule over the approved mockup. Fix: the project rule "What Luke has agreed is the spec" (PR #24).
+- **Designed for one screen (Luke).** The size explorer started out sized for a 1280 × 800 laptop, not Luke's (about 1440 × 785), until he asked; it then used fixed pixels for his screen, and nobody said up front that other widths would need their own answers. That surfaced at the end as five more decisions (5 to 9).
+- **Hard-to-read questions (Luke).** "Phone layout" for laptop windows, undefined terms ("the content", "1440"), pixel math in the question. Luke had to ask for rewrites, and a rewrite done in place without a reply left him looking for an answer.
+- **A missed test failure.** The full test run failed at 3:08 pm Pacific and nobody told Luke until he asked at 3:35.
+- **Mac vs Linux.** CI failed three times on GitHub's Linux after passing on the builder's Mac or being pushed on purpose: once to show the numbers panel didn't fit at 1280 (Decision 6), once a real layout problem (big snow totals), once a test that measured too early.
+
+### Try next time (Claude)
+- When a design starts at one screen size, say at the start which other sizes it must handle, and ask those questions while designing.
+- Check every CI result when it finishes, not when asked.
+
 ## The whole project
 
 ### How long it took
